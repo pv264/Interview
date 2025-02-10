@@ -1,0 +1,60 @@
+1️⃣ CI/CD Pipeline Optimization Issues
+
+Have you optimized any CI/CD pipeline because of an issue you observed?
+
+Yes, common issues include long build times, redundant steps, and security vulnerabilities. Optimization strategies include parallelizing jobs, caching dependencies, and removing unnecessary steps.
+
+What are some real-time issues in CI/CD that require optimization?
+
+Slow build/test times, flaky tests, unoptimized artifact storage, excessive permissions in deployment pipelines, and lack of rollback mechanisms.
+
+2️⃣ Prisma Defender Image Scanning
+
+What are the outputs that appear in the console after scanning an image using Prisma Defender?
+
+Prisma Defender provides vulnerability reports including severity levels (Critical, High, Medium, Low), compliance status, package details, and remediation suggestions.
+
+3️⃣ SonarQube Code Analysis
+
+What is a code smell in SonarQube?
+
+A code smell refers to maintainability issues that don’t necessarily cause failures but make the code harder to understand and modify.
+
+What is the difference between code smell, bug, and vulnerability in SonarQube?
+
+Code Smell: Maintainability issues.
+
+Bug: Functional errors that could cause incorrect behavior.
+
+Vulnerability: Security weaknesses that could be exploited.
+
+4️⃣ Deploying MySQL on AWS EC2
+
+What strategy would you use to deploy a MySQL server into an EC2 instance in AWS?
+
+Choose an appropriate EC2 instance type, install MySQL, configure security groups to allow database access, enable automated backups, and use AWS RDS if managed service is preferred.
+
+5️⃣ EKS Microservice Access to DynamoDB
+
+A developer requests access for a microservice running in an EKS cluster to connect with DynamoDB. How would you implement this?
+
+Use IAM roles for service accounts (IRSA) to grant fine-grained access to DynamoDB, ensuring the least privilege principle.
+
+6️⃣ DynamoDB Overview
+
+What is DynamoDB?
+
+Amazon DynamoDB is a fully managed NoSQL database service that offers high performance, scalability, and built-in security features.
+
+7️⃣ Cloud Cost Optimization Strategies
+
+What are some cost optimization strategies while using cloud services?
+
+Right-sizing instances, using Reserved or Spot instances, leveraging auto-scaling, optimizing storage, using serverless architectures, and monitoring spending with cost management tools.
+
+8️⃣ Right-Sizing in Cloud Computing
+
+What does right-sizing mean in cloud computing?
+
+Right-sizing refers to selecting the most appropriate cloud resources based on actual usage patterns to avoid over-provisioning and reduce costs.
+
