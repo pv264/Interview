@@ -14,6 +14,18 @@ setup security groups to Define which ports are open to the internet like HTTP o
   
   <b>.<p>5you need to analyze access patterns and usage of your AWS environment which tools would you use and why would you use them to analyze access patterns and usage</b></p>
    Amazon Cloud watch is an excellent tool it provides detailed insight into resource utilization and systemwide operational are Health you want to set up monitoring for key metrics across your AWS services like CPU utilization Network traffic and dis IO operations Amazon cloudwatch allows you to create dashboards to visualize usage patterns and set alarms to notify you when thresholds are exceeded this information helps to optimize resource allocation improve your application performance and reduce costs by adjusting capacity based on actual usage 
+
+ <b>.<p>6you're designing a system that needs to Scale based on traffic describe how you would set up autoscaling and load balancing on AWS </b></p>
+ To design a system that scales based on traffic integrates AWS Auto scaling with elastic load balancing start by defining launch templates that specify the ec2 instance type the a Mi I and other configurations like key Pairs and security groups create an autoscaling group setting parameters such as the desired minimum and maximum number of instances attach the autoscaling group to an E instance the EB distributes incoming application traffic across multiple ec2 instances improving for tolerance you also want to configure scaling policies based on metrics like C CP utilization or network traffic to automatically increase or decrease the number of instances this setup ensures the application maintains Optimal Performance and cost efficiency under varying load conditions.
+ 
+ <b>.<p>7 your company has strict data retention requirements how would you automate the life cycle management of objects in an S3 bucket </b></p>
+ To achieve this goal utilize S3 life cycle policies these policies allow you to Define rules for automatically moves objects to less expensive storage classes or deleting them after the reach the end of the life cycle you want to Define rules based on object prefixes tags or ages to transition data to S3 standard IIA for infrequent access or S3 glacia for archiving you also want to set exploration actions to permanently delete old objects that are no longer  required this automated management helps in adhering to compliance requirements and reducing storage costs without manual intervention
+          
+          
+         
+       
+          
+          
           
           
          
