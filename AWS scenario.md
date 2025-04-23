@@ -20,7 +20,34 @@ setup security groups to Define which ports are open to the internet like HTTP o
  
  <b>.<p>7 your company has strict data retention requirements how would you automate the life cycle management of objects in an S3 bucket </b></p>
  To achieve this goal utilize S3 life cycle policies these policies allow you to Define rules for automatically moves objects to less expensive storage classes or deleting them after the reach the end of the life cycle you want to Define rules based on object prefixes tags or ages to transition data to S3 standard IIA for infrequent access or S3 glacia for archiving you also want to set exploration actions to permanently delete old objects that are no longer  required this automated management helps in adhering to compliance requirements and reducing storage costs without manual intervention
+
+ <b>.<p>8 you're asked to ensure High availability and disaster recovery for a multier web application what AWS services and configurations would you use </b></p>
+ To ensure High availability and disaster recovery for a multi-tier web application deploy the application across multiple availability zones within an AWS region use elastic load balancing to distribute traffic across healthy ec2 instances in  different availability zones enhancing for tolerance you also want to leverage Amazon RDS with multi-az deployments for the database layer to ensure data replication an automatic failover to standby instances in case of a failure for Disaster Recovery replicate critical data across different geographical locations using Amazon S3 cross region replication Implement Amazon R 53 health checks and DNS failover to automatically redirect users to a backup site if the primary site fails this architecture ensures that the application remains operational even during partial Network failures or data center outages 
+
+  <b>.<p>9how would you implement a secure environment for handling sensitive data in AWS </b></p>
+  Achieving this involves multiple AWS services and best practices use Amazon VPC to create a private Network and configure subnets route tables and internet gateways to control network access use security groups and network access control lists to enforce inbound and outbound traffic rules at the instance and subnet levels  respectively utilize IM for user and permission management ensuring that only authorized users and services can access specific resources you also want to enable encryption at rest using Amazon Key Management Service or Amazon KMS for encryption in transit ensure that all data exchanges are done over SSL TLS regularly audit your environment M for security compliance with AWS config and monitor for potential threats using Amazon guard Duty
+  
+<b>.<p>10 An organization needs a robust system for monitoring and automatically reacting to changes in their AWS environment what solution would you use </b></p>
+for this purpose for robust monitoring and automa ated reactions in AWS environments combine the use of AWS Cloud watch and AWS Lambda setup Cloud watch to monitor key metrics and logs for your AWS resources such as ec2 instances RDS databases and Lambda functions Define Cloud watch alarms based on thresholds that trigger  an SNS notification or directly invoke an AWS Lambda function when breached you also want to design Lambda function to automatically respond to changes such as adjusting autoscaling groups modifying Security Group rules or sending notifications to administrators this proactive monitoring and response system enhances operational efficiency and ensures that the environment adapts quickly to workload changes or potential issues 
+
+<b>.<p>11 how would you ensure a newly deployed application is optimized for cost and performance on AWS  </b></p>
+to do this start by selecting the appropriate instance types and sizes based on the application's performance and workload requirements using AWS cost Explorer to analyze and manage your AWS spending Implement autoscaling to adjust resources automatically without over provisioning use Amazon Cloud watch to monitor application performance and set up custom alerts for any performance issues you should also optimize data transfer costs by keeping data in the same region and using Amazon Cloud front to reduce data transfer loads constantly review and adjust your configuration as the application skills or as new AWS features and pricing models become available as this ensures that applications run efficiently at the lowest cost possible
+
+<b>.<p>11 architect in a high availability system that spans across multiple AWS regions what architecture would you propose </b></p>
+ in order to achieve this goal design a multi- region setup using services that support cross region functionality deploy your application in at least two regions using Amazon et2 autoscaling and elastic load balancing to distribute traffic Within each of the regions set up database replication across multiple regions using Amazon RDS multi-az deployments or Dynamo DB Global tables for automatically synchronized data across regions use R 53 with health checks and DNS failover to Route users to the nearest or best performing region you also want to implement S3 cross region replication for critical data to ensure it is available in more multiple locations this architecture guarantees that even if one region fails the application remains available without significant disruption
           
+          
+          
+          
+         
+        
+          
+         
+         
+          
+          
+          
+         
           
          
        
