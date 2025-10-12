@@ -45,23 +45,13 @@ Similarly, in VPC B, I would update its route table to send traffic destined for
 
 Without this step, the instances won't know how to route the traffic.
 
-## 6 Explain the Architecture of kubernetes on a high level
-2. Control Plane Components
+## 6 I have an app running on POD in EKS.Now I want to access this application using example.com. how to set it up
+To expose a pod in EKS with a custom domain, we first create a LoadBalancer Service which provisions an AWS ELB. The ELB gets a public DNS, and we create a DNS CNAME record pointing example.com to that ELB DNS. For multiple applications or HTTPS, we deploy an Ingress Controller and attach a TLS certificate from ACM. This allows users to securely access the pod via a custom domain while enabling path-based routing and encryption."
 
-The Control Plane is responsible for the cluster’s global decisions (scheduling, scaling, updates) and managing the state.
+## 7. I have craeated a VPC manually. Now I have to create an ec2 instance inside that vpc. How do you pass existing vpc id in terraform
+In Terraform, to use an existing VPC, we pass its VPC ID as a variable and reference it when creating resources like subnets and security groups. We can organize our code by defining data sources in a data.tf file—for example, using aws_vpc to fetch the existing VPC and aws_subnet_ids to get its subnets. Then we can create EC2 instances or other resources within that VPC, allowing Terraform to manage only the resources we need without creating a new VPC."
 
-Component	Role
-API Server (kube-apiserver)	Exposes the Kubernetes API. All interactions with the cluster go through this. Acts as the front-end.
-etcd	Distributed key-value store. Stores all cluster data like cluster state, configuration, and secrets. Think of it as Kubernetes’ database.
-Controller Manager	Runs various controllers (e.g., node controller, deployment controller) that manage the state of objects and ensure desired vs actual state alignment.
-Scheduler	Assigns workloads (pods) to nodes based on resources, policies, affinity/anti-affinity, etc.
-3. Worker Node Components
+## 8. you have provisioned a vpc using terraform and someone deleted it manually, then if you run terraform apply how will it behave
+If a Terraform-managed VPC is deleted manually, the state file still thinks it exists. When you run terraform apply, Terraform will detect the VPC is missing and recreate it according to the configuration. Dependent resources managed by Terraform may also be recreated. If you want to use an existing manually-created VPC, you would need to terraform import it into the state file first."
 
-Worker nodes host the workloads (your containers) and report back to the control plane.
-
-Component	Role
-kubelet	Agent running on every node. Ensures containers described in PodSpecs are running. Reports node status to the API server.
-kube-proxy	Manages networking rules, load-balancing, and service discovery within the cluster.
-Container Runtime	Software responsible for running containers (e.g., Docker, containerd).
-Pods	The smallest deployable units. Can contain one or more containers.
 
