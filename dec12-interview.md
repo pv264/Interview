@@ -37,6 +37,7 @@ The main advantage of Secrets over ConfigMaps is security. Secrets are designed 
 Docker does not allow deleting an image if there are running or stopped containers using that image. The image is still referenced by the container, so Docker prevents its removal.”
 ## 9. how will you troubleshoot 401 and 403 error codes. and what are these errors
 “401 means Unauthorized, where authentication is missing or invalid, such as an expired token or wrong credentials.
+
 403 means Forbidden, where authentication is successful but the user does not have permission to access the resource.
 
 To troubleshoot 401, I verify authentication headers, tokens, credential validity, and the auth service.
