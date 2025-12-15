@@ -84,6 +84,9 @@ To check what is consuming disk space on a Linux server, I first use df -h to id
 ## 16. How will you run different Jenkins slaves for different brnaches like for production and uat
 configure separate Jenkins agents for different environments like UAT and Production and assign them environment-specific labels. In a multi-branch pipeline, I use the branch name condition inside the Jenkinsfile to select the appropriate agent using labels. For example, the main branch runs on the production agent, while UAT or feature branches run on the UAT agent. This ensures environment isolation, security, and controlled deployments.”
 
+## 17 what do we do if we lost the pem key
+
+If a PEM key is lost, we cannot download it again. If SSM access is available, we log in via Session Manager and add a new SSH key. Otherwise, we stop the instance, detach the root volume, attach it to another instance, update the authorized_keys file, reattach it, and start the instance. If none of these are possible, the instance must be rebuilt from backup or AMI.
 
 
 
