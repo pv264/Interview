@@ -47,5 +47,9 @@ In Kubernetes, a 401 error means authentication to the API server failed, usuall
 A 403 error means authentication succeeded, but RBAC denied the action due to missing roles or role bindings.
 
 To troubleshoot 401, I check kubeconfig, tokens, ServiceAccounts, and cluster authentication.
+## 10. what is multi-branch pipeline
+A multi-branch pipeline is a CI/CD pipeline that automatically detects all branches in a repository and creates a separate pipeline for each branch, allowing independent build, test, and deployment workflows.”
+## 11. How can you save the cost on AWS RDS Instances for non production environment?
+To save cost on RDS in non-production environments, I use smaller burstable instances, disable Multi-AZ, reduce backup retention, and delete unused snapshots. The biggest cost saving comes from stopping the RDS instance when it’s not in use and scheduling start/stop using automation. Where applicable, I also use Graviton instances or Aurora Serverless to further reduce cost.”
 
 
