@@ -21,4 +21,30 @@ We create a VPC peering connection between Account A’s VPC and Account B’s V
 
 For larger or multi-VPC environments, we would use Transit Gateway instead of peering. If private connectivity is not required, an alternative is exposing the EC2 application through an ALB or NLB with public access, but private connectivity is always preferred for security.”
 
+## 5. I want specific pods to be scheduled on specific nodes, How will you ensure this
+To ensure that only specific pods are scheduled on specific nodes, I use taints and tolerations.
+
+First, I taint the node, which tells Kubernetes not to schedule any pods on that node by default. Then, I add a matching toleration to only those pods that are allowed to run on that node.
+
+This way, Kubernetes ensures that only pods with the correct toleration can be scheduled on the tainted node, and all other pods are rejected.”
+
+## 6.How will you establish communication between pods running in two diff name spaces
+Pods in different namespaces can communicate by default in Kubernetes because all pods share the same cluster network. Communication is usually done using Services with fully qualified domain names (FQDN). If restrictions are needed, Network Policies are used to control traffic.”
+
+## 7. What is the advantage of Secrets over configmaos in kubernetes
+The main advantage of Secrets over ConfigMaps is security. Secrets are designed to store sensitive information like passwords and tokens, whereas ConfigMaps are meant for non-sensitive configuration. Secrets support RBAC restrictions, encryption at rest in etcd, and integration with external secret managers. ConfigMaps store data in plain text and do not provide these security features.”
+## 8. Can we delete a docker image when the container is running with that image
+Docker does not allow deleting an image if there are running or stopped containers using that image. The image is still referenced by the container, so Docker prevents its removal.”
+## 9. how will you troubleshoot 401 and 403 error codes. and what are these errors
+“401 means Unauthorized, where authentication is missing or invalid, such as an expired token or wrong credentials.
+403 means Forbidden, where authentication is successful but the user does not have permission to access the resource.
+
+To troubleshoot 401, I verify authentication headers, tokens, credential validity, and the auth service.
+To troubleshoot 403, I check IAM or application permissions, resource policies, explicit denies, network rules, and logs like CloudTrail.
+In AWS, 401 usually indicates credential issues, while 403 indicates permission or policy-related issues.”
+In Kubernetes, a 401 error means authentication to the API server failed, usually due to an invalid or expired token, wrong kubeconfig, or incorrect ServiceAccount.
+A 403 error means authentication succeeded, but RBAC denied the action due to missing roles or role bindings.
+
+To troubleshoot 401, I check kubeconfig, tokens, ServiceAccounts, and cluster authentication.
+
 
