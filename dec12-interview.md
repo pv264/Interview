@@ -51,5 +51,39 @@ To troubleshoot 401, I check kubeconfig, tokens, ServiceAccounts, and cluster au
 A multi-branch pipeline is a CI/CD pipeline that automatically detects all branches in a repository and creates a separate pipeline for each branch, allowing independent build, test, and deployment workflows.”
 ## 11. How can you save the cost on AWS RDS Instances for non production environment?
 To save cost on RDS in non-production environments, I use smaller burstable instances, disable Multi-AZ, reduce backup retention, and delete unused snapshots. The biggest cost saving comes from stopping the RDS instance when it’s not in use and scheduling start/stop using automation. Where applicable, I also use Graviton instances or Aurora Serverless to further reduce cost.”
+## 12. How will you increase disk space on linux server
+First, I check disk usage using df -h and lsblk.
+Then I increase the disk size at the cloud or VM level, such as modifying the EBS volume in AWS.
+Once Linux detects the new size, I extend the partition using growpart.
+After that, I resize the filesystem using xfs_growfs for XFS or resize2fs for ext4.
+If LVM is used, I extend the volume group and logical volume using vgextend and lvextend, followed by filesystem resize.”
+
+## 13. How will you troubleshoot slow performance linux server
+“To troubleshoot slow performance on a Linux server, I start by checking CPU and load average using uptime and top. Then I analyze memory usage with free -h and vmstat to detect swapping. I check disk I/O using iostat and iotop, as disk wait is a common cause of slowness. I identify resource-intensive processes using ps aux, verify disk space with df -h, and finally check network latency and system logs using ss, ping, and journalctl. This systematic approach helps me quickly identify the bottleneck.”
+
+## 14. How will you troubleshoot crashloop, Image pull back off issue in kubernetes
+CrashLoopBackOff means the container starts, crashes, and Kubernetes keeps restarting it.
+<b> kubectl describe pod <pod-name> -n <namespace> </b
+Check:
+Events section
+Exit code
+Reason for failure
+<b>kubectl logs <pod-name> -n <namespace> </b>
+Common issues found in logs:
+
+App crash / unhandled exception
+Port binding error
+Missing environment variables
+DB connection failure
+For ImagePullBackOff, I check pod events, validate image names and tags, confirm registry access, imagePullSecrets, and network connectivity.
+In both cases, kubectl describe pod and logs are the key starting points.”
+
+## 15. How will you check what all files are consuming high disk space on linux server
+To check what is consuming disk space on a Linux server, I first use df -h to identify the affected filesystem. Then I use du -h --max-depth=1 to find the largest directories and drill down step by step. To identify large files, I use find with size filters and sort the output. I also specifically check common directories like /var/log and Docker paths. If available, I use ncdu for faster analysis.”
+
+## 16. How will you run different Jenkins slaves for different brnaches like for production and uat
+configure separate Jenkins agents for different environments like UAT and Production and assign them environment-specific labels. In a multi-branch pipeline, I use the branch name condition inside the Jenkinsfile to select the appropriate agent using labels. For example, the main branch runs on the production agent, while UAT or feature branches run on the UAT agent. This ensures environment isolation, security, and controlled deployments.”
+
+
 
 
