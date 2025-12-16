@@ -7,7 +7,7 @@ First, I’ll check whether the Service has endpoints using kubectl get endpoint
 If endpoints are empty, it usually means the Service selector does not match the Pod labels.
 I’ll verify labels on the pods using kubectl get pods --show-labels and compare them with the Service selector.
 If labels match and endpoints exist, I’ll then check the Service type, targetPort vs containerPort, and finally test connectivity using a temporary debug pod with curl.”
----------------
+0r
 If a pod is running but the app isn’t accessible, I first verify the container logs and confirm the app is listening on the correct port. Then I check the Service targetPort and ensure the application is bound to 0.0.0.0, not localhost. In many cases, it’s a port mismatch or binding issue.”
 
 ## 2. Pod is Stuck in CrashLoopBackOff but Logs Look Fine
