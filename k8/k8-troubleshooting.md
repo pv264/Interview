@@ -1,14 +1,28 @@
 ## 1. Pods are Running but Application is Not Reachable via Service
-What’s really being tested
-Service selectors
-Endpoints
-Networking basics
-First, I’ll check whether the Service has endpoints using kubectl get endpoints <service-name>.
-If endpoints are empty, it usually means the Service selector does not match the Pod labels.
-I’ll verify labels on the pods using kubectl get pods --show-labels and compare them with the Service selector.
-If labels match and endpoints exist, I’ll then check the Service type, targetPort vs containerPort, and finally test connectivity using a temporary debug pod with curl.”
-0r
-If a pod is running but the app isn’t accessible, I first verify the container logs and confirm the app is listening on the correct port. Then I check the Service targetPort and ensure the application is bound to 0.0.0.0, not localhost. In many cases, it’s a port mismatch or binding issue.”
+# Kubernetes Troubleshooting
+
+**What’s really being tested:**
+* Service selectors
+* Endpoints
+* Networking basics
+
+First, I’ll check whether the Service has endpoints using:
+`kubectl get endpoints <service-name>`
+
+* If endpoints are empty, it usually means the **Service selector** does not match the **Pod labels**.
+* I’ll verify labels on the pods using `kubectl get pods --show-labels` and compare them with the Service selector.
+* If labels match and endpoints exist, I’ll then check the Service type, `targetPort` vs `containerPort`, and finally test connectivity using a temporary debug pod with `curl`.
+
+---
+
+**OR**
+
+If a pod is running but the app isn’t accessible:
+
+1. I first verify the **container logs** and confirm the app is listening on the correct port.
+2. Then I check the **Service `targetPort`** and ensure the application is bound to `0.0.0.0`, not `localhost`.
+
+> In many cases, it’s a port mismatch or binding issue.
 
 ## 2. Pod is Stuck in CrashLoopBackOff but Logs Look Fine
 What’s being tested
