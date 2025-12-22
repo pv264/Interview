@@ -157,3 +157,21 @@ If a pod is running but the app isn’t accessible:
    I’ll check if there’s a deny-all policy applied and whether the required namespace selectors are missing.
 
 > **Rule:** NetworkPolicies are namespace-scoped, so explicit allow rules are required once policies are enabled.
+
+## 10. I have configured a desired replica count of 5 pods, but only 3 pods are running. What could be the issue?
+
+**Core Issue:** If the desired replica count is 5 but only 3 are running, it usually means the remaining pods are in a **Pending** state and cannot be scheduled.
+
+**Common Causes:**
+1.  **Insufficient Resources:** Nodes do not have enough available **CPU or Memory** to meet the pod's requests.
+2.  **Scheduling Constraints:** Pods are restricted by **Node Selectors** or **Affinity/Anti-Affinity** rules that cannot be satisfied.
+3.  **Taints & Tolerations:** Nodes are tainted, and the new pods do not have the matching tolerations.
+4.  **Resource Quotas:** The **Namespace** has hit its hard limit for CPU, memory, or pod count.
+5.  **Pod Errors:**
+    * **ImagePullBackOff:** Pods are scheduled but failing to download the image.
+    * **CrashLoopBackOff:** Pods start but immediately crash.
+
+**Troubleshooting Steps:**
+* Check Pod Status: `kubectl get pods` (Look for Pending/Error).
+* Check Events: `kubectl describe pod <pending-pod-name>` (The "Events" section will state exactly why it isn't scheduling).
+* Check
