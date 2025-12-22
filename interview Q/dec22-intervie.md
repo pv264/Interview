@@ -23,3 +23,18 @@ S3 cross-account replication can be used, but it is typically recommended for co
 
 ## 7 What is the default route in the main route table?
 By default, a VPC’s main route table includes a local route for the VPC CIDR that allows communication within the VPC. This route is automatically created and cannot be modified, while any internet or external routes must be configured manually.
+
+## 8 why do we need vpc peering?
+We need VPC peering to enable secure, private communication between resources in different VPCs. By default, VPCs are isolated, and peering allows them to communicate using private IP addresses over the AWS backbone without exposing traffic to the internet. This is commonly used for cross-account access, environment isolation, and shared services while maintaining strong security and low latency.
+
+## 9 How to configure vpc peering between two AWS accounts
+To configure VPC peering between two AWS accounts, I create a VPC peering connection request from the first account and accept it in the second account. Once the connection is active, I update the route tables in both VPCs to route traffic to the peer CIDR through the peering connection. Finally, I adjust security groups and network ACLs to allow traffic between the two VPC CIDR ranges. It’s also important to ensure that the CIDR blocks do not overlap.
+
+## 10.Vpc peering vs transit gateway
+VPC peering is designed for direct connectivity between two VPCs, while Transit Gateway is used to connect multiple VPCs and on-premises networks in a scalable and centralized manner with transitive routing support.
+
+## 11. One of the target group is unhealthy what could be the possible reasons?
+A target becomes unhealthy when the load balancer’s health check fails. Common reasons include the application not running or not responding on the configured health check path or port, incorrect health check settings, security group or NACL restrictions blocking traffic, resource exhaustion on the instance, or misconfiguration such as incorrect target type or missing port mapping. Troubleshooting involves checking the health check status, validating networking rules, and verifying application logs.
+
+## 12 I have configured a desired replica count of 5 pods, but only 3 pods are running. What could be the issue?
+If the desired replica count is 5 but only 3 pods are running, it usually means the remaining pods cannot be scheduled. Common reasons include insufficient CPU or memory on the nodes, pending pods due to node selector or affinity constraints, taints without matching tolerations, namespace resource quotas being exceeded, image pull failures, or pods crashing repeatedly. The issue can be identified by checking pod status, events, node resources, and namespace quotas.
