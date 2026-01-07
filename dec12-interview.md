@@ -44,9 +44,8 @@ For larger environments with multiple VPCs, use **AWS Transit Gateway** to route
 I use **Taints and Tolerations**.
 
 1.  **Taint the Node:** This tells Kubernetes to reject any pod that does not have a matching toleration.
-    ```bash
-    kubectl taint nodes
-    ## 6. Let's say a Jenkins agent is running on an EC2 instance in AWS Account A and it has to fetch the image from ECR from AWS Account B. How do you setup?
+    `
+  ## 6. Let's say a Jenkins agent is running on an EC2 instance in AWS Account A and it has to fetch the image from ECR from AWS Account B. How do you setup?
 
 **Strategy: Cross-Account IAM Role Assumption**
 
