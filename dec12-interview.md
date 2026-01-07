@@ -46,3 +46,19 @@ I use **Taints and Tolerations**.
 1.  **Taint the Node:** This tells Kubernetes to reject any pod that does not have a matching toleration.
     ```bash
     kubectl taint nodes
+    ## 6. Let's say a Jenkins agent is running on an EC2 instance in AWS Account A and it has to fetch the image from ECR from AWS Account B. How do you setup?
+
+**Strategy: Cross-Account IAM Role Assumption**
+
+1.  **Account B (Target/ECR):**
+    * Create an **IAM Role** in Account B.
+    * Attach **ECR Read Permissions** (e.g., `AmazonEC2ContainerRegistryReadOnly`) to this role.
+    * Configure the **Trust Policy** on this role to explicitly allow Account A (specifically the IAM Role attached to the Jenkins EC2) to assume it.
+
+2.  **Account A (Source/Jenkins):**
+    * The IAM Role attached to the Jenkins EC2 instance must have permission to perform `sts:AssumeRole` on the role ARN created in Account B.
+
+3.  **Execution (The Workflow):**
+    * Jenkins runs a command (via CLI or plugin) to **assume the role** in Account B using AWS STS (`aws sts assume-role`).
+    * It receives **temporary security credentials** (Access Key, Secret Key, Session Token).
+    * It uses these credentials to log in to ECR (`aws ecr get-login-password`) and pull the Docker image securely.
