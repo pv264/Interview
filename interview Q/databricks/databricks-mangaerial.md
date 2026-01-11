@@ -10,8 +10,9 @@
 
 **✅ Interview-Ready Answer:**
 “When a customer is frustrated, my first priority is to listen without interrupting and make sure they feel heard. I acknowledge the impact before jumping into technical details.
-I usually restate the issue in my own words to confirm understanding and let them know I’m taking ownership of the investigation.
-From there, I clearly explain what I’m checking, why I’m checking it, and what the next update will be, even if I don’t yet have a fix. This helps build trust.
+ and I will let them know I’m taking ownership of the investigation.
+From there, I clearly explain what I’m checking, why I’m checking it, and what the next update will be.This helps build trust.
+
 During the incident, I keep communication transparent and regular, and once the issue is resolved, I walk the customer through the root cause and preventive steps.
 I’ve found that customers are much calmer when they see steady progress and clear communication, even during high-severity incidents.”
 
