@@ -6,4 +6,6 @@ Before this, I spent over three years at TCS, where I built my foundational DevO
 
 I'm excited to bring my experience in automating complex cloud systems to a new challenge.
 
-hows it
+I’m currently handling standard Cloud Infrastructure tasks, but I’m eager to utilize my automation skills more effectively. I’m looking for a dual-function role where I can combine Cloud Engineering with DevOps practices—specifically using Infrastructure as Code (IaC) and CI/CD tools to build scalable, automated systems."
+
+
