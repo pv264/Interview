@@ -35,6 +35,14 @@ to do this start by selecting the appropriate instance types and sizes based on 
 
 <b>.<p>11 architect in a high availability system that spans across multiple AWS regions what architecture would you propose </b></p>
  in order to achieve this goal design a multi- region setup using services that support cross region functionality deploy your application in at least two regions using Amazon et2 autoscaling and elastic load balancing to distribute traffic Within each of the regions set up database replication across multiple regions using Amazon RDS multi-az deployments or Dynamo DB Global tables for automatically synchronized data across regions use R 53 with health checks and DNS failover to Route users to the nearest or best performing region you also want to implement S3 cross region replication for critical data to ensure it is available in more multiple locations this architecture guarantees that even if one region fails the application remains available without significant disruption
+
+ <b> lets say a new devloper has joined to the development team and we need give him the access to the existing ec2 servrer </b>
+ When a new developer joins, I create an IAM user with least privileges, generate an SSH key pair, create a separate Linux user on the EC2 instance, configure key-based authentication, and grant sudo access only if required. This avoids shared credentials, improves security, and allows easy access revocation
+ Step 1: Create an IAM user for the developer
+ Step 2: Generate SSH key pair (for EC2 access)
+ Step 3: Login to EC2 as existing admin user
+ Step 4: Create a Linux user for the new developer
+ Step 5: Configure SSH key access for the user
           
           
           
