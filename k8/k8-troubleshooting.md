@@ -175,3 +175,26 @@ If a pod is running but the app isn’t accessible:
 * Check Pod Status: `kubectl get pods` (Look for Pending/Error).
 * Check Events: `kubectl describe pod <pending-pod-name>` (The "Events" section will state exactly why it isn't scheduling).
 * Check
+
+## 11. what is OOM in kubernetes and why we get this error
+
+# Kubernetes OOM (Out of Memory) Errors
+
+In Kubernetes, **OOM** stands for **Out of Memory**. When you see this error (often appearing as `OOMKilled` in your pod status), it means a container was forcefully terminated because it tried to use more memory than it was allowed, or because the physical node it was running on ran out of RAM.
+
+**Key Concept:**
+Unlike CPU usage, which Kubernetes can "throttle" (slow down) to keep things running, **Memory is a non-compressible resource**. If a process needs memory and none is available, the system has no choice but to kill the process to protect the rest of the operating system.
+
+## Why do you get this error?
+
+There are two primary levels where an OOM event occurs:
+
+### 1. Container Limit Exceeded (Cgroup OOM)
+This is the most common cause. You have defined a limit in your YAML file, and the application tried to go past it.
+
+* **The Cause:** Your application legitimately needed more memory for a task, or it has a **memory leak** where it gradually consumes RAM without releasing it.
+* **The Result:** The Linux kernel's "OOM Killer" identifies the specific container breaching its limit and sends a `SIGKILL`.
+* **How to spot it:**
+    Running `kubectl describe pod <pod-name>` will show:
+    * **Reason:** `OOMKilled`
+    * **Exit Code:** `137`
