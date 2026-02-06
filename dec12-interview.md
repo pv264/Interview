@@ -61,3 +61,8 @@ I use **Taints and Tolerations**.
     * Jenkins runs a command (via CLI or plugin) to **assume the role** in Account B using AWS STS (`aws sts assume-role`).
     * It receives **temporary security credentials** (Access Key, Secret Key, Session Token).
     * It uses these credentials to log in to ECR (`aws ecr get-login-password`) and pull the Docker image securely.
+
+    ## 7. Ec2 instance become unresponsive, how do you troubleshoot
+
+If an instance becomes unreachable and the system status check fails, I know it’s an AWS host issue and usually resolve it by stop-start. If the instance status check fails, I troubleshoot OS-level issues like disk or memory usage.
+Status checks in EC2 are automated health checks performed by AWS to verify the availability of the instance and the underlying infrastructure. There are two checks: system status check, which monitors AWS hardware and network issues, and instance status check, which monitors the operating system and instance-level issues. These checks help identify whether an issue is on the AWS side or the customer side.
