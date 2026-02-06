@@ -64,5 +64,20 @@ I use **Taints and Tolerations**.
 
     ## 7. Ec2 instance become unresponsive, how do you troubleshoot
 
-If an instance becomes unreachable and the system status check fails, I know it’s an AWS host issue and usually resolve it by stop-start. If the instance status check fails, I troubleshoot OS-level issues like disk or memory usage.
-Status checks in EC2 are automated health checks performed by AWS to verify the availability of the instance and the underlying infrastructure. There are two checks: system status check, which monitors AWS hardware and network issues, and instance status check, which monitors the operating system and instance-level issues. These checks help identify whether an issue is on the AWS side or the customer side.
+# AWS EC2 Status Checks & Troubleshooting
+
+**Status Checks** in EC2 are automated health checks performed by AWS to verify the availability of the instance and the underlying infrastructure. These checks help identify whether an issue is on the AWS side or the customer side.
+
+## 1. System Status Check (AWS Side)
+This monitors the AWS underlying hardware, networking, and physical host issues.
+
+* **Scenario:** If the system status check fails.
+* **Meaning:** The instance is unreachable due to an AWS host or infrastructure issue.
+* **Resolution:** I usually resolve it by performing a **Stop-Start** of the instance (which moves it to healthy hardware).
+
+## 2. Instance Status Check (Customer Side)
+This monitors the operating system and instance-level configuration.
+
+* **Scenario:** If the instance status check fails.
+* **Meaning:** The OS is having trouble (e.g., boot failure, network configuration, kernel panic).
+* **Resolution:** I troubleshoot OS-level issues like **disk usage**, **memory usage**, or corrupted file systems.
