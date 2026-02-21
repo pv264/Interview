@@ -198,3 +198,31 @@ This is the most common cause. You have defined a limit in your YAML file, and t
     Running `kubectl describe pod <pod-name>` will show:
     * **Reason:** `OOMKilled`
     * **Exit Code:** `137`
+
+    ## Scenario: 502 Errors After Kubernetes Deployment
+
+**The Situation:**
+* You deployed a new version of your application.
+* Users are reporting **502 Bad Gateway** errors.
+* Pods are in a `Running` state.
+* The ALB (Application Load Balancer) is healthy.
+* There are no obvious pod crashes.
+
+**👉 How to troubleshoot this step-by-step in production:**
+
+**Strategy:** Isolate the issue layer by layer.
+
+1.  **Confirm the Source (Ingress/ALB):**
+    Check the ALB access logs to confirm exactly where the 502 is originating. Is the ALB generating it because the target closed the connection unexpectedly, or is the backend application explicitly returning a 502?
+2.  **Verify Kubernetes Networking:**
+    Check the **Service-to-Pod mapping**. Run `kubectl get endpoints <service-name>` to ensure the Service has actually registered the Pod IPs and is capable of routing traffic to them.
+3.  **Validate Readiness Probes:**
+    Ensure the readiness probes are configured correctly. If they are passing prematurely before the application has fully initialized, the Service will send traffic to a pod that isn't ready to accept connections, resulting in dropped requests.
+4.  **Container-Level Testing:**
+    `exec` into a pod (or use a temporary debug pod) to `curl` the application directly on its local port. This isolates whether the app itself is refusing connections or if the issue is strictly network-related.
+5.  **Inspect Application Logs:**
+    Run `kubectl logs <pod-name>` to look for backend failures. Look for things like database connection timeouts or application-level exceptions that don't crash the container process but cause it to fail to serve HTTP requests.
+6.  **Compare Configurations:**
+    Since this occurred immediately after a deployment, compare the YAML configurations (ConfigMaps, Secrets, environment variables) between the old and new versions to identify any breaking changes.
+7.  **Mitigate (Rollback):**
+    If the root cause isn't immediately obvious and production users are impacted, execute a rollback (`kubectl rollout undo deployment <name>`) to restore service quickly while investigating the faulty release in a lower environment.
