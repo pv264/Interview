@@ -62,3 +62,39 @@ Based on the findings, I would adjust the scaling strategy to be request-driven 
 * If a recent deployment caused the health checks to fail:
   ```bash
   kubectl rollout undo deployment <app-name>
+
+  ## Incident Response: Corrupted Terraform State & Infrastructure Drift
+
+**The Situation:**
+* Your Terraform state file got corrupted in production.
+* Someone accidentally ran `terraform apply`.
+* Infrastructure drift occurred.
+
+**👉 Executive Strategy (The On-Call Mindset):**
+"If Terraform state was corrupted and an apply caused drift, my first step would be to stop further changes and assess the impact. If using an S3 backend with versioning, I would restore the previous state file version. If not, I would manually reconcile using `terraform refresh` and `terraform import`. After stabilizing production, I would implement strict remote backend configuration, state locking, versioning, and a CI/CD-controlled apply process to prevent recurrence."
+
+---
+
+### Step-by-Step Execution:
+
+**1. Stop and Assess**
+* Immediately halt any further Terraform runs or manual cloud console changes to prevent compounding the drift.
+* Assess the actual impact on the live production environment (e.g., were critical resources deleted, or just modified?).
+
+**2. State Recovery (The Happy Path)**
+* If the state is stored in an **S3 backend with versioning enabled**, navigate to the S3 bucket, find the `terraform.tfstate` object, and restore the last known good version before the corruption.
+* Run `terraform plan` (or `terraform apply -refresh-only`) to verify the restored state matches the real-world infrastructure.
+
+
+
+**3. Manual Reconciliation (The Hard Path)**
+* If versioning was *not* enabled (or the state was local), you must manually rebuild the state.
+* Identify the drifted/orphaned resources.
+* Use `terraform import` to bring existing, real-world resources back into the state file one by one.
+* Use `terraform apply -refresh-only` to update the state file with the current configuration of those resources.
+
+**4. Long-Term Prevention**
+* **Remote Backend:** Always use a robust remote backend (like AWS S3).
+* **Versioning:** Strictly enforce S3 object versioning on the state bucket.
+* **State Locking:** Implement a DynamoDB table for state locking to prevent concurrent apply operations.
+* **CI/CD Automation:** Remove direct `terraform apply` access from local engineer machines. Force all applies to go through a peer-reviewed, automated CI/CD pipeline.
