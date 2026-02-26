@@ -43,3 +43,37 @@ If the state becomes corrupted due to manual edits (or other reasons), follow th
 3. **Verify:** Re-run `terraform plan` to ensure the local state perfectly matches the real-world infrastructure without attempting unexpected changes.
 
 > **Best Practice:** Avoid manual edits to the `.tfstate` file entirely. Always use dedicated CLI commands (like `terraform state mv`, `rm`, or `import`) to safely manipulate the state.
+
+## 4. Designing Terraform Architecture for Multiple Environments
+
+To ensure a scalable and secure enterprise-grade setup, the architecture must focus on **modularity**, **state isolation**, and **automated deployment pipelines**.
+
+### Core Architectural Principles
+
+* **Reusable Modules:** Create a `modules/` directory to define standardized infrastructure components (e.g., VPC, RDS, EKS). This ensures consistency across all environments and reduces code duplication.
+* **State Isolation:** Maintain **separate state files** for each environment to prevent accidental changes in `prod` while working in `dev`.
+* **Dedicated Backends:** Use a **separate backend configuration** (e.g., distinct S3 buckets or prefixes) for `dev`, `qa`, and `prod`.
+* **Environment-Specific Variables:** Use `terraform.tfvars` or specific variable files for each environment to handle differences in instance sizes, CIDR blocks, or tags.
+* **CI/CD Integration:** Control deployments via pipelines (e.g., GitHub Actions, GitLab CI, or Jenkins) to enforce manual approvals for `prod` and automated testing for `dev`.
+
+### Recommended Directory Structure
+
+```text
+root-directory/
+├── modules/                # Shared reusable components
+│   ├── vpc/
+│   ├── ec2/
+│   └── rds/
+└── environments/           # Environment-specific configurations
+    ├── dev/
+    │   ├── main.tf         # Calls modules with dev-specific values
+    │   ├── variables.tf
+    │   └── backend.tf      # S3 bucket for dev state
+    ├── qa/
+    │   ├── main.tf
+    │   ├── variables.tf
+    │   └── backend.tf      # S3 bucket for qa state
+    └── prod/
+        ├── main.tf
+        ├── variables.tf
+        └── backend.tf      # S3 bucket for prod state
