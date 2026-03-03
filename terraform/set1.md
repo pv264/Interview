@@ -203,6 +203,19 @@ For **ALB + ASG**, **Blue-Green** is safest approach.
 * If **lock stuck** → use **`terraform force-unlock`**.
 * Avoid **manual deletion** unless necessary.
 
+## 16 What happens if someone manually deletes a resource from AWS?
+
+**Answer:**
+
+* **`terraform plan`** will detect that the resource is missing by comparing the **State File** with the **real-world infrastructure**.
+* It will automatically plan to **recreate** the resource to match the declared configuration.
+* If the resource is still defined in code, I run **`terraform apply`** to restore it.
+* If deletion was intentional, I must **update the Terraform code** or **remove the resource from state** (using **`terraform state rm`**) to avoid recreation.
+* **Terraform** always tries to **reconcile** real-world infrastructure with the **declared configuration**.
+
+
+
+> **Senior Signal:** To prevent manual deletions from causing issues, implement **IAM policies** that restrict **Delete** permissions and use **`prevent_destroy`** lifecycle rules for critical resources like **RDS** or **S3 buckets**.
 ---
 
 ## 🔥 If Interviewer Asks: "Explain your Terraform Production Experience"
