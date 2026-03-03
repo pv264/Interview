@@ -226,3 +226,18 @@ This is the most common cause. You have defined a limit in your YAML file, and t
     Since this occurred immediately after a deployment, compare the YAML configurations (ConfigMaps, Secrets, environment variables) between the old and new versions to identify any breaking changes.
 7.  **Mitigate (Rollback):**
     If the root cause isn't immediately obvious and production users are impacted, execute a rollback (`kubectl rollout undo deployment <name>`) to restore service quickly while investigating the faulty release in a lower environment.
+    
+## 12. How does traffic flow from the internet to a Pod?
+
+**Answer:**
+The flow of traffic from a public user to a **Kubernetes Pod** follows these key steps:
+
+1.  **DNS Resolution:** Traffic first reaches **DNS**, which resolves the domain name to a **Load Balancer** (e.g., **AWS ALB/NLB**).
+2.  **Load Balancer:** The **Load Balancer** forwards traffic to **worker nodes** via a **target group** or **NodePort**.
+3.  **Kube-Proxy:** On the **node**, **kube-proxy** manages the routing rules (usually via **iptables** or **IPVS**) to route traffic to a **Kubernetes Service**.
+4.  **Service:** The **Service** acts as a stable endpoint and load balances traffic to one of the matching **Pod IPs**.
+5.  **Pod & Container:** the **container** inside the **Pod** receives and handles the request.
+
+
+
+> **Senior Signal:** In modern cloud environments, using an **Ingress Controller** (like **Nginx** or **AWS Load Balancer Controller**) is the standard. It allows for **L7 routing** (host-based or path-based), providing more granular control than a simple **L4 Service** type **LoadBalancer**.
