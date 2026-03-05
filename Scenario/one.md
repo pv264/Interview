@@ -124,4 +124,4 @@ All alerts were integrated with **Grafana Alerting** / **Alertmanager**, which s
 
 ### Result
 This monitoring setup allowed us to proactively detect **GPU memory saturation**, resource exhaustion, and service downtime, significantly improving system reliability.
-
+## 5. which cicd failure that took long time to debug?
