@@ -125,3 +125,29 @@ All alerts were integrated with **Grafana Alerting** / **Alertmanager**, which s
 ### Result
 This monitoring setup allowed us to proactively detect **GPU memory saturation**, resource exhaustion, and service downtime, significantly improving system reliability.
 ## 5. which cicd failure that took long time to debug?
+## Jenkins Pipeline Failure: AWS ECR Authentication Issue
+
+**Answer:**
+We had a **Jenkins pipeline** that builds a **Docker image** and pushes it to **AWS ECR**. Suddenly the pipeline started failing during the image push stage, even though the same pipeline was working earlier.
+
+### First, I checked the pipeline logs in Jenkins and noticed the error:
+`no basic auth credentials`
+
+This indicated that the pipeline was not authenticated to **AWS ECR**.
+
+### I verified:
+* **Jenkins credentials configuration**
+* **IAM permissions** for the **EC2 instance** running **Jenkins**
+* **Docker login commands** in the pipeline
+
+### Root Cause:
+After deeper investigation, I found that the **ECR authentication token** had expired because the pipeline was using an old login method that cached credentials. Since **ECR tokens** are valid only for **12 hours**, the authentication failed.
+
+
+
+### Prevention:
+* Updated the **CI/CD pipeline** to always refresh **ECR login tokens**
+* Improved **pipeline logs** to make authentication failures easier to identify
+* Documented the fix for the team
+
+> **Senior Signal:** When running **Jenkins** on **AWS**, the most secure way to handle **ECR** authentication is by using **IAM Roles** attached to the **EC2 instance** (Instance Profile) and ensuring the `aws ecr get-login-password` command is executed within the pipeline to handle the 12-hour token rotation automatically.
