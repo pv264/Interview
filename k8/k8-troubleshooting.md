@@ -241,3 +241,29 @@ The flow of traffic from a public user to a **Kubernetes Pod** follows these key
 
 
 > **Senior Signal:** In modern cloud environments, using an **Ingress Controller** (like **Nginx** or **AWS Load Balancer Controller**) is the standard. It allows for **L7 routing** (host-based or path-based), providing more granular control than a simple **L4 Service** type **LoadBalancer**.
+
+## 13. Troubleshooting: Helm Chart Deploying Old Image After Jenkins Tag Update
+
+**Answer:**
+In our **CI/CD** pipeline, we use **Jenkins** to build the **Docker** image and push it to **AWS ECR**, then **Jenkins** updates the image tag in the **Helm** chart `values.yaml`. **ArgoCD** watches the **Helm** repository and deploys the changes to **Kubernetes**.
+
+If the **Helm** chart deploys an old image, I usually troubleshoot the pipeline step by step:
+
+1.  **Verify Git Push:** I check whether **Jenkins** actually committed and pushed the updated `values.yaml` to the **Helm repository**. Sometimes the pipeline updates the file locally, but the **`git push`** step fails.
+2.  **Verify ArgoCD Configuration:** I verify that **ArgoCD** is tracking the correct **branch** and **repository**. If **Jenkins** pushes to `main` but **ArgoCD** is watching another branch like `master`, the deployment will still use the old configuration.
+3.  **Check ArgoCD Sync Status:** I check the **ArgoCD** sync status. If **auto-sync** is disabled or the application is not refreshed, **ArgoCD** may not deploy the new change.
+4.  **Validate Environment Files:** I validate the values file used in the **Helm** chart. Sometimes **Jenkins** updates `values.yaml`, but the deployment might be using `values-prod.yaml` or another environment-specific file.
+5.  **Inspect Kubernetes State:** Finally, I check the **Kubernetes** deployment itself using **`kubectl describe deployment`** to verify which image tag is actually running.
+
+
+
+> **Senior Signal:** This issue is often related to a **"Commit Loop"** or a **"Branch Mismatch."** By checking **Jenkins** logs, the **Helm** repo commit history, **ArgoCD** sync status, and the **Kubernetes** deployment spec, I can identify exactly where the pipeline is deploying the old image.
+
+---
+
+### Troubleshooting Checklist
+* [ ] Did the **Jenkins** `git push` succeed?
+* [ ] Is **ArgoCD** pointed to the correct branch?
+* [ ] Is **Auto-Sync** enabled in **ArgoCD**?
+* [ ] Are the correct **Helm** values files being referenced for the environment?
+* [ ] Does **`kubectl describe`** match the expected tag?
