@@ -151,3 +151,32 @@ After deeper investigation, I found that the **ECR authentication token** had ex
 * Documented the fix for the team
 
 > **Senior Signal:** When running **Jenkins** on **AWS**, the most secure way to handle **ECR** authentication is by using **IAM Roles** attached to the **EC2 instance** (Instance Profile) and ensuring the `aws ecr get-login-password` command is executed within the pipeline to handle the 12-hour token rotation automatically.
+
+## 6. What is the complex issue that you handled recently?
+
+**Answer:**
+Recently, I worked on a complex issue in a **DevSecOps CI/CD pipeline** integrated with **GitOps**, where deployments to **Kubernetes** were failing intermittently even though **Jenkins** pipelines were succeeding.
+
+**Jenkins** was building and pushing images to **ECR** correctly, and **Helm charts** were also getting updated. However, **ArgoCD** was not consistently deploying the latest version, which made the issue difficult to trace because everything looked fine at each individual stage.
+
+### Systematic Troubleshooting:
+I approached it systematically by validating each layer:
+
+1.  **Jenkins Layer:** I checked **Jenkins** and found that sometimes the **Helm repo** changes were not being committed properly, which caused **ArgoCD** to miss updates.
+2.  **Authentication Layer:** I discovered that **ECR authentication tokens** were expiring after instance restarts, causing **image pull failures** in **Kubernetes**.
+3.  **ArgoCD Layer:** I analyzed **ArgoCD** and realized it was showing the app as **“Synced,”** but it wasn’t actually deploying new images because:
+    * **Image tags** were not unique.
+    * There was some **repo caching** involved.
+4.  **Kubernetes Layer:** On the **Kubernetes** side, another issue was that the **`imagePullPolicy`** was set to **`IfNotPresent`**, so even when a new image was available, pods were not pulling it.
+
+
+
+### Final Fix:
+I implemented the following changes to resolve the issue:
+* **Unique image tagging** using build numbers.
+* Proper **Helm repo commit handling**.
+* **Dynamic ECR login** in **Jenkins**.
+* Enabled **ArgoCD auto-sync**, **self-heal**, and **prune**.
+* Updated **`imagePullPolicy`** to **`Always`**.
+
+> **Senior Signal:** Intermittent failures in GitOps pipelines often stem from "Silent Failures" where the status shows Green/Synced but the actual state is stale. Moving away from mutable tags (like `latest`) to unique, immutable tags is the most effective way to ensure Kubernetes recognizes a change and triggers a rolling update.
