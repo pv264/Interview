@@ -180,3 +180,32 @@ I implemented the following changes to resolve the issue:
 * Updated **`imagePullPolicy`** to **`Always`**.
 
 > **Senior Signal:** Intermittent failures in GitOps pipelines often stem from "Silent Failures" where the status shows Green/Synced but the actual state is stale. Moving away from mutable tags (like `latest`) to unique, immutable tags is the most effective way to ensure Kubernetes recognizes a change and triggers a rolling update.
+
+## Troubleshooting: EKS NodeCreationFailure
+
+
+## 7. What is the complex issue that you handled recently?
+**Answer:**
+In a recent task, I faced a **NodeCreationFailure** issue while setting up an **EKS cluster**. The **EC2 instances** for worker nodes were launching successfully, but they were not joining the cluster.
+
+### Investigation Steps:
+1.  **IAM Verification:** I started by verifying **IAM roles** and confirmed the node group had the required policies.
+2.  **Networking Check:** I checked the networking and realized the nodes were deployed in **private subnets** without a **NAT Gateway**.
+
+
+
+### Root Cause:
+Since **worker nodes** need outbound internet access to pull images from **ECR** and communicate with the **EKS control plane**, the lack of **NAT** was causing the failure.
+
+### Resolution:
+* I fixed this by creating a **NAT Gateway** in a **public subnet**.
+* I updated the **private route tables** to route internet traffic through the **NAT Gateway**.
+* After recreating the **node group**, the nodes successfully joined the cluster and were in **Ready state**.
+
+> **Senior Signal:** When nodes fail to join an **EKS cluster**, the "Big Three" to check are **IAM Roles (AmazonEKSWorkerNodePolicy)**, **Security Group** (allowing Port 10250 and 443), and **Outbound Connectivity** (NAT Gateway or VPC Endpoints). This incident highlights why **VPC Routing** is as critical as the compute resources themselves in **EKS** setups.
+
+---
+
+### Key Takeaway
+* **Outbound connectivity** is mandatory for nodes to register with the **Control Plane**.
+* **NAT Gateways** or **Interface VPC Endpoints** (PrivateLink) are required for private subnet node communication.
