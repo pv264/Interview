@@ -60,3 +60,16 @@ When designing a secure and scalable cloud architecture, I usually start with a 
 * Finally, I implement **observability** using tools like **CloudWatch**, **Prometheus**, and **Grafana** to monitor **metrics**, **logs**, and **alerts** so that issues can be detected and resolved quickly.
 
 > **Senior Signal:** A truly "Senior" architecture doesn't just scale—it fails gracefully. By utilizing **Multi-AZ RDS** and **Auto Scaling**, you ensure the system can survive a single-zone outage without manual intervention.
+
+
+
+--------------------------------------------------------------------
+Three-tier architecture consists of presentation, application, and database layers. The entire infrastructure is deployed inside a VPC, which is divided into public and private subnets across multiple availability zones for high availability.
+
+The user request first goes to Amazon Route 53, which resolves the domain name and routes traffic to a CDN like Amazon CloudFront for caching static content and reducing latency.
+
+From the CDN, traffic is forwarded to an Application Load Balancer placed in public subnets. The load balancer distributes traffic across web servers in the presentation tier, which are also deployed in public subnets.
+
+The web tier communicates with the application tier hosted in private subnets. The application tier handles business logic and communicates with the database tier. The database tier is deployed in isolated private subnets for enhanced security.
+
+Security groups restrict traffic flow so that only the web tier can access the application tier, and only the application tier can access the database tier. This design improves scalability, security, high availability, and performance.
