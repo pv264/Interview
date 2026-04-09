@@ -34,3 +34,15 @@ If someone manually opens **port 443** in **AWS**, **`terraform plan`** will try
 When a resource is tainted, **Terraform** will **destroy and recreate** it in the next **`apply`**, even if there are no changes in the configuration.
 
 > **Senior Signal:** While it is important to know what tainting does, you should definitely mention in an interview that the `terraform taint` command was deprecated in Terraform v0.15.2. The modern best practice is to use **`terraform apply -replace="resource_address"`** instead. Pointing this out shows the interviewer that you are up-to-date with current Terraform standards!
+
+## 4. What are lifecycle arguments in Terraform and how are they used?
+
+**Answer:**
+**Lifecycle arguments** are used within a resource block to control how **Terraform** handles creation, update, and deletion. 
+
+For example, we use:
+* **`create_before_destroy`** to avoid downtime.
+* **`prevent_destroy`** to protect critical resources like databases.
+* **`ignore_changes`** when certain attributes are managed outside **Terraform**, such as **Auto Scaling** desired capacity.
+
+> **Senior Signal:** Using **`ignore_changes`** is essential when working with external tools (like an AWS Application Auto Scaler or Kubernetes controllers) that dynamically modify resource properties, preventing Terraform from constantly trying to "revert" those external changes during every apply.
