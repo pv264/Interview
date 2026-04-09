@@ -46,3 +46,12 @@ For example, we use:
 * **`ignore_changes`** when certain attributes are managed outside **Terraform**, such as **Auto Scaling** desired capacity.
 
 > **Senior Signal:** Using **`ignore_changes`** is essential when working with external tools (like an AWS Application Auto Scaler or Kubernetes controllers) that dynamically modify resource properties, preventing Terraform from constantly trying to "revert" those external changes during every apply.
+
+## 5.What is Terraform remote backend, and why do we use it?
+
+**Answer:**
+A **remote backend** in **Terraform** defines where the **state file** is stored remotely instead of locally. It is commonly configured using services like **S3**. 
+
+We use it to enable **team collaboration**, ensure **centralized state management**, and improve **security**. 
+
+> **Senior Signal:** It also supports **state locking** using services like **DynamoDB**, which prevents multiple users from making concurrent changes.
