@@ -83,3 +83,22 @@ If a resource is manually deleted from **AWS** but still exists in the **Terrafo
 * Since the resource is defined in the **configuration** but missing in the actual infrastructure, it will plan to **recreate** it during **`terraform apply`**.
 
 > **Senior Signal:** This behavior occurs because **Terraform** treats the configuration as the **desired state**, and its primary function is to reconcile the real-world infrastructure to match that declared state.
+
+## 8.What will happen if you delete a resource manually from AWS but it still exists in Terraform state?
+
+**Answer:**
+If a resource is manually deleted from **AWS** but still exists in the **Terraform state**, **Terraform** will behave as follows:
+
+* It will detect the mismatch during the **`terraform plan`** phase. 
+* Since the resource is defined in the **configuration** but missing in the actual infrastructure, it will plan to **recreate** it during **`terraform apply`**.
+
+> **Senior Signal:** This behavior occurs because **Terraform** treats the configuration as the **desired state**, and its primary function is to reconcile the real-world infrastructure to match that declared state.
+
+## 9. What are Terraform workspaces, and when would you use them?
+
+**Answer:**
+**Terraform workspaces** allow us to manage multiple **state files** for the same configuration. They are used to deploy the same infrastructure code to different environments like **dev**, **staging**, and **production**, while keeping their states isolated.
+
+For example, I can use the same **Terraform code** to create an **EC2 instance**, but by switching workspaces like **dev** and **prod**, **Terraform** will create separate instances for each environment because each workspace maintains its own state file.
+
+ While CLI workspaces are great for local testing or spinning up temporary feature environments, HashiCorp strongly recommends using separate directories or Terraform Cloud workspaces for major environments (like Dev vs. Prod). This provides better blast radius isolation and prevents accidental deployments to production if an engineer forgets to run `terraform workspace select prod`.
