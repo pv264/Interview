@@ -73,3 +73,13 @@ To prevent drift, we **restrict manual access** and enforce changes through **Te
 For example, if an **EC2 instance** is launched in a **subnet**, and that **subnet** belongs to a **VPC**, **Terraform** will first create the **VPC**, then the **subnet**, and finally the **EC2 instance** because of these references.
 
  In cases where dependencies are not explicitly defined in the code, we can use **`depends_on`** to enforce them manually. For example, if a backend server depends on a database being fully ready but there is no direct reference, we can use **`depends_on`** to control the order.
+
+ ## 8. What will happen if you delete a resource manually from AWS but it still exists in Terraform state?
+
+**Answer:**
+If a resource is manually deleted from **AWS** but still exists in the **Terraform state**, **Terraform** will behave as follows:
+
+* It will detect the mismatch during the **`terraform plan`** phase. 
+* Since the resource is defined in the **configuration** but missing in the actual infrastructure, it will plan to **recreate** it during **`terraform apply`**.
+
+> **Senior Signal:** This behavior occurs because **Terraform** treats the configuration as the **desired state**, and its primary function is to reconcile the real-world infrastructure to match that declared state.
