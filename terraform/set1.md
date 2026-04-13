@@ -87,11 +87,24 @@ For **enterprise setup**:
 ## 6. Difference between count and for_each? Why is count risky?
 
 **Answer:**
-**count** creates resources using **numeric indexes**.
-If one resource is removed in the middle, **indexes shift**, causing **resource recreation**.
-**for_each** uses **stable keys**, preventing index shifting issues.
-In **production**, we prefer **for_each** for stability.
+*Answer:**
+**`count`** and **`for_each`** are both used to create multiple resources. **`count`** is index-based, so removing an item can shift indexes and cause unintended recreation.
 
+For example, if I create three **EC2 instances** using **`count`**:
+* **index 0** → instance A
+* **index 1** → instance B
+* **index 2** → instance C
+
+If I remove instance B (**index 1**), **Terraform** shifts instance C to **index 1**, which can lead to it being recreated.
+
+With **`for_each`**, each instance is created using a **unique key**, like:
+* **“app1”** → instance A
+* **“app2”** → instance B
+* **“app3”** → instance C
+
+If I remove **“app2”**, the others remain unchanged because their keys don’t shift. 
+
+> **Senior Signal:** That’s why **`for_each`** is preferred in **production**.
 ---
 
 ## 7. How do you migrate from local to remote backend without downtime?
