@@ -101,4 +101,4 @@ If a resource is manually deleted from **AWS** but still exists in the **Terrafo
 
 For example, I can use the same **Terraform code** to create an **EC2 instance**, but by switching workspaces like **dev** and **prod**, **Terraform** will create separate instances for each environment because each workspace maintains its own state file.
 
- While CLI workspaces are great for local testing or spinning up temporary feature environments, HashiCorp strongly recommends using separate directories or Terraform Cloud workspaces for major environments (like Dev vs. Prod). This provides better blast radius isolation and prevents accidental deployments to production if an engineer forgets to run `terraform workspace select prod`.
+ In our project, we maintained separate directories for dev and prod. Each environment had its own S3 backend and DynamoDB table for state locking, ensuring complete isolation and avoiding accidental impact across environments.”
