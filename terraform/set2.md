@@ -55,3 +55,12 @@ A **remote backend** in **Terraform** defines where the **state file** is stored
 We use it to enable **team collaboration**, ensure **centralized state management**, and improve **security**. 
 
 > **Senior Signal:** It also supports **state locking** using services like **DynamoDB**, which prevents multiple users from making concurrent changes.
+
+## 6. ## What is Terraform drift, and how do you handle it?
+
+**Answer:**
+**Terraform drift** occurs when infrastructure is changed outside **Terraform**, leading to a mismatch between the **state** and actual resources. 
+
+We detect it using **`terraform plan`** or **`refresh-only`**, and then either update the code or revert the changes. 
+
+To prevent drift, we **restrict manual access** and enforce changes through **Terraform**.
