@@ -72,4 +72,4 @@ To prevent drift, we **restrict manual access** and enforce changes through **Te
 
 For example, if an **EC2 instance** is launched in a **subnet**, and that **subnet** belongs to a **VPC**, **Terraform** will first create the **VPC**, then the **subnet**, and finally the **EC2 instance** because of these references.
 
-> **Senior Signal:** In cases where dependencies are not explicitly defined in the code, we can use **`depends_on`** to enforce them manually. For example, if a backend server depends on a database being fully ready but there is no direct reference, we can use **`depends_on`** to control the order.
+ In cases where dependencies are not explicitly defined in the code, we can use **`depends_on`** to enforce them manually. For example, if a backend server depends on a database being fully ready but there is no direct reference, we can use **`depends_on`** to control the order.
