@@ -64,3 +64,12 @@ We use it to enable **team collaboration**, ensure **centralized state managemen
 We detect it using **`terraform plan`** or **`refresh-only`**, and then either update the code or revert the changes. 
 
 To prevent drift, we **restrict manual access** and enforce changes through **Terraform**.
+
+## 7. How does Terraform handle dependencies between resources?
+
+**Answer:**
+**Terraform** manages dependencies using a **dependency graph**. It automatically creates **implicit dependencies** when one resource references another, ensuring the correct order of creation.
+
+For example, if an **EC2 instance** is launched in a **subnet**, and that **subnet** belongs to a **VPC**, **Terraform** will first create the **VPC**, then the **subnet**, and finally the **EC2 instance** because of these references.
+
+> **Senior Signal:** In cases where dependencies are not explicitly defined in the code, we can use **`depends_on`** to enforce them manually. For example, if a backend server depends on a database being fully ready but there is no direct reference, we can use **`depends_on`** to control the order.
