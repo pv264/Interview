@@ -22,3 +22,21 @@ Since this involves potential data loss, I would:
 
 
  Direct recreation in production must be avoided. In a real-world scenario, you should also look for the `forces replacement` note in the plan output to identify the specific field (like a DB identifier change or a storage type modification) that is triggering the destroy/create cycle. Using **`prevent_destroy = true`** in your lifecycle block is a proactive way to ensure this never happens by accident.
+
+ ## 3.You ran `terraform apply`, but it failed in the middle. Some resources are created, some are not. What will you do?
+
+**Answer:**
+If **`terraform apply`** fails midway, I would first review the error output to identify the root cause. Since **Terraform** tracks successfully created resources in the **state**, I can fix the issue and then run **`terraform plan`** to confirm the expected changes. 
+
+After that, I would re-run **`terraform apply`**, and due to **Terraform’s idempotent nature**, it will only create or update the remaining resources.
+
+### Example Scenario:
+If we provide an incorrect or non-existent **AMI ID** while creating an **EC2 instance**, **Terraform** will fail with an error like `InvalidAMIID.NotFound`.
+
+In such cases, I would:
+1.  Check the **error message**.
+2.  Identify the **root cause**.
+3.  **Fix the configuration** (e.g., provide the correct AMI ID).
+4.  Re-run **`terraform apply`**.
+
+> **Senior Signal:** A partial failure can sometimes lead to a "State Lock" issue if the process was interrupted abruptly. If the backend is **S3/DynamoDB**, you may need to manually release the lock using **`terraform force-unlock <LOCK_ID>`** before you can successfully re-run the apply. Furthermore, always check if any "orphaned" resources were created that didn't make it into the state—though rare, a **`terraform import`** might be necessary to bring them back under management.
