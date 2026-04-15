@@ -56,6 +56,10 @@ In an **Auto Scaling Group**, we might set `desired_capacity = 2` in **Terraform
 
 > **Senior Signal:** Using **`ignore_changes`** is a critical best practice when your infrastructure interacts with external controllers or "intelligent" cloud services. Beyond Auto Scaling, it is frequently used for **tags** (if a security tool adds compliance tags automatically) or **Kubernetes** resources where external controllers might modify metadata or replicas.
 
-# 5 .What is the purpose of terraform init?
+## 5 .What is the purpose of terraform init?
 
 `terraform init` initializes a Terraform working directory. It downloads required provider plugins, sets up the backend configuration, and prepares the environment to run Terraform commands.
+
+## 6. What happens if you change the backend configuration in Terraform?
+
+If we change the backend configuration, Terraform detects it during `terraform init` and prompts to migrate the state. We can migrate the state to the new backend using `-migrate-state`. This ensures the existing infrastructure is still tracked correctly.
