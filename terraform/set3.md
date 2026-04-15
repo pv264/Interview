@@ -40,3 +40,18 @@ In such cases, I would:
 4.  Re-run **`terraform apply`**.
 
 > **Senior Signal:** A partial failure can sometimes lead to a "State Lock" issue if the process was interrupted abruptly. If the backend is **S3/DynamoDB**, you may need to manually release the lock using **`terraform force-unlock <LOCK_ID>`** before you can successfully re-run the apply. Furthermore, always check if any "orphaned" resources were created that didn't make it into the state—though rare, a **`terraform import`** might be necessary to bring them back under management.
+
+## 4. What is `ignore_changes`?
+
+**Answer:**
+**`ignore_changes`** is a **lifecycle argument** used to tell **Terraform** to ignore updates to specific attributes. It is useful when certain values are managed outside **Terraform** or change dynamically, such as **Auto Scaling desired capacity**. This prevents **Terraform** from overriding those changes.
+
+
+
+### Example Scenario:
+In an **Auto Scaling Group**, we might set `desired_capacity = 2` in **Terraform**. However, during high traffic, **AWS** can automatically increase it to **4**.
+
+* **Without `ignore_changes`:** **Terraform** will detect a drift (it sees 4 but wants 2) and will try to bring it back to **2** in the next run, potentially causing a performance bottleneck during high traffic.
+* **With `ignore_changes`:** We tell **Terraform** to ignore this specific field so it does not override the changes made by the **Auto Scaling** policy.
+
+> **Senior Signal:** Using **`ignore_changes`** is a critical best practice when your infrastructure interacts with external controllers or "intelligent" cloud services. Beyond Auto Scaling, it is frequently used for **tags** (if a security tool adds compliance tags automatically) or **Kubernetes** resources where external controllers might modify metadata or replicas.
