@@ -216,6 +216,8 @@ For **ALB + ASG**, **Blue-Green** is safest approach.
 * If **lock stuck** → use **`terraform force-unlock`**.
 * Avoid **manual deletion** unless necessary.
 
+If Terraform fails midway, I first analyze the exact error and verify which resources were successfully created using both Terraform state and the cloud console. After fixing the root cause — such as IAM permissions, quota limits, or configuration issues — I rerun terraform apply because Terraform is idempotent and resumes based on the current state. If resources exist outside the state, I use terraform import to avoid duplication. In production, I use remote backends like S3 with DynamoDB locking to protect state consistency and support recovery.”
+
 ## 16 What happens if someone manually deletes a resource from AWS?
 
 **Answer:**
