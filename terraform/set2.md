@@ -19,8 +19,20 @@ In the **root module**, I pass these outputs into the **RDS module** as **input 
 
 **Answer:**
 
-* **`terraform plan`** compares my **Terraform code** with actual infrastructure.
-* **`terraform plan -refresh-only`** compares **Terraform state** with actual infrastructure.
+### `terraform plan`
+**`terraform plan`** compares the **desired Terraform configuration** (your code) with the **actual infrastructure** by querying the cloud provider APIs. If differences are found, **Terraform** generates a plan to make the real infrastructure match the **Terraform code**.
+
+Terraform Code → Actual AWS Infrastructure
+
+
+### `terraform plan -refresh-only`
+**`terraform plan -refresh-only`** compares the **Terraform state file** with the **actual infrastructure** and generates a refresh plan to update the **state** so it matches the real infrastructure.
+
+Actual AWS Infrastructure → Terraform State
+
+---
+
+> **Senior Signal:** Use **`terraform plan`** when you want to see what changes your code will make to the world. Use **`-refresh-only`** when you suspect the world has changed (drift) and you want to update your state file to reflect that reality without actually modifying any live resources.
 
 ### Scenario: Manual Infrastructure Changes
 If someone manually opens **port 443** in **AWS**, **`terraform plan`** will try to remove it since it’s not in code. But **`refresh-only`** will just detect that change and update the state without modifying infrastructure. That’s why I use **`refresh-only`** to safely audit drift before applying changes.
