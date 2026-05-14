@@ -47,6 +47,23 @@ When a resource is tainted, **Terraform** will **destroy and recreate** it in th
 
 > **Senior Signal:** While it is important to know what tainting does, you should definitely mention in an interview that the `terraform taint` command was deprecated in Terraform v0.15.2. The modern best practice is to use **`terraform apply -replace="resource_address"`** instead. Pointing this out shows the interviewer that you are up-to-date with current Terraform standards!
 
+## Real-World Scenario: Using `terraform taint` for GPU Instances
+
+**Answer:**
+I used **`terraform taint`** in a real scenario while provisioning a **vLLM GPU EC2 instance** using **Terraform**. During provisioning, we were installing **NVIDIA drivers** and container dependencies using **`remote-exec`** or shell provisioning scripts. The provisioning got stuck midway, leaving the **EC2 instance** in a partially configured state.
+
+### The Problem:
+The **EC2 instance** was created successfully, but the **NVIDIA driver installation** failed during the provisioning stage. **Terraform** considered the resource "created" (because the API call to AWS succeeded), but the server was not usable because the **GPU drivers** and **Docker containers** were not configured properly.
+
+
+
+### The Solution:
+Instead of manually deleting the **EC2 instance** through the AWS Console, I marked the resource as tainted using **`terraform taint`**. This tells **Terraform** that the resource is unhealthy and must be **recreated** during the next **`apply`**.
+
+---
+
+> **Senior Signal:** In high-performance computing (HPC) or AI infrastructure, provisioning often fails due to external network timeouts or driver compatibility issues. Using `taint` (or the modern `terraform apply -replace`) is the cleanest way to trigger a "clean slate" deployment. To prevent this in the future, it is often better to move away from `remote-exec` and use **Packer** to build a **Pre-baked Golden AMI** with drivers already installed, making the deployment process much faster and more reliable.
+
 ## 4. What are lifecycle arguments in Terraform and how are they used?
 
 **Answer:**
