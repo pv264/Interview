@@ -63,3 +63,33 @@ stage('Parallel Verification') {
 
 2️⃣ Caching & Dependency Management
 Cache dependencies like Maven, NPM, or Docker layers to avoid downloading them in every build:
+
+
+# Security in a CI/CD Pipeline
+
+**"How do you ensure security in a CI/CD pipeline?"**
+
+Security in a CI/CD pipeline is critical, and we follow a **Shift Left Approach**, where security is integrated at every stage of development rather than just before deployment. This helps in catching vulnerabilities early, reducing the cost and effort of fixing them later.
+
+## 🔹 How We Ensure Security in CI/CD:
+
+### 1. Secure Code Practices (Pre-Build Stage)
+*   ✅ **SonarLint:** Integrated into developers’ IDEs to detect issues early.
+*   ✅ **SonarQube:** Performs static code analysis (SAST) to identify vulnerabilities and code smells.
+
+### 2. Secure Build & Dependency Management
+*   ✅ **Software Composition Analysis (SCA):** Identifies vulnerabilities in open-source dependencies using tools like Snyk or OWASP Dependency-Check.
+*   ✅ **Secrets Scanning:** Tools like GitLeaks scan for hardcoded credentials.
+
+### 3. Container & Image Security
+*   ✅ **Prisma Defender (or Trivy):** Scans Docker images for vulnerabilities before pushing to ECR (Elastic Container Registry).
+*   ✅ **Multi-stage builds:** Reduces image size and attack surface.
+
+### 4. Application & API Security Testing (Pre-Deployment Stage)
+*   ✅ **Fortify (DAST):** Detects runtime vulnerabilities in web applications.
+*   ✅ **OWASP ZAP:** Used for penetration testing and API security scans.
+
+### 5. Secure Deployment & Infrastructure Hardening
+*   ✅ **IAM Policies & Role-Based Access Control (RBAC):** Limits access to critical environments.
+*   ✅ **Infrastructure as Code (IaC) Security:** Tools like Checkov or tfsec scan Terraform files for misconfigurations.
+*   ✅ **Runtime Security:** Tools like Falco monitor Kubernetes clusters for suspicious activity.
