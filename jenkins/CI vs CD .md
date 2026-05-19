@@ -28,3 +28,38 @@
 * **Continuous Deployment** → **automatically release** to production 
 
 > **Senior Signal:** The choice between **Continuous Delivery** and **Continuous Deployment** is often a business decision rather than a technical one. Organizations with high-risk compliance requirements often prefer **Delivery** to maintain a "human-in-the-loop," while high-velocity teams leverage **Deployment** to achieve multiple releases per day.
+
+# Jenkins CI/CD Pipeline Optimization
+
+How can you optimize a Jenkins CI/CD pipeline for better performance and faster builds?
+
+To optimize a Jenkins CI/CD pipeline for better performance and faster builds, we can implement the following strategies:
+
+## 1️⃣ Parallel Builds & Stages
+Instead of running tasks sequentially, we use the `parallel` directive in a Jenkinsfile to run jobs simultaneously.
+
+**Example:** Running unit tests, security scans, and builds in parallel:
+
+```groovy
+stage('Parallel Verification') {
+    parallel {
+        stage('Unit Tests') {
+            steps {
+                // Run unit tests here
+            }
+        }
+        stage('Security Scan') {
+            steps {
+                // Run security scanning tools here
+            }
+        }
+        stage('Build Artifact') {
+            steps {
+                // Compile and build code here
+            }
+        }
+    }
+}
+
+2️⃣ Caching & Dependency Management
+Cache dependencies like Maven, NPM, or Docker layers to avoid downloading them in every build:
