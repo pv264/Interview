@@ -75,7 +75,7 @@ Security in a CI/CD pipeline is critical, and we follow a **Shift Left Approach*
 
 ### 1. Secure Code Practices (Pre-Build Stage)
 *   ✅ **SonarLint:** Integrated into developers’ IDEs to detect issues early.
-*   ✅ **SonarQube:** Performs static code analysis (SAST) to identify vulnerabilities and code smells.
+*   ✅ **SonarQube:** Performs static code analysis (SAST) to identify vulnerabilities and code smells
 
 ### 2. Secure Build & Dependency Management
 *   ✅ **Software Composition Analysis (SCA):** Identifies vulnerabilities in open-source dependencies using tools like Snyk or OWASP Dependency-Check.
