@@ -53,3 +53,5 @@ In performance monitoring and observability, **percentiles** are used to measure
 Averages are dangerous in observability because they hide the outliers. If 99 requests take 10ms, but 1 request takes 5,000ms (5 seconds), the average will look perfectly fine, completely hiding the fact that a user had a terrible experience. Percentiles expose those hidden failures.
 
 > **Senior Signal:** In enterprise SLA (Service Level Agreement) discussions, we rarely promise a p50 latency. We almost always guarantee a **p95 or p99** threshold (e.g., "p99 response time will be under 200ms"). Showing that you understand *why* averages lie and why p99 matters for capacity planning and auto-scaling decisions is a huge plus in SRE/DevOps interviews!
+
+Threshold values are usually decided based on load testing, application SLA requirements, and system capacity. We gradually increase traffic during performance testing and observe metrics like P95 latency, CPU, memory, and error rate. The point where performance starts degrading becomes the baseline for alerting or autoscaling thresholds. These thresholds are later fine-tuned using real production traffic patterns.
