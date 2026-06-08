@@ -63,3 +63,61 @@ In an **Auto Scaling Group**, we might set `desired_capacity = 2` in **Terraform
 ## 6. What happens if you change the backend configuration in Terraform?
 
 If we change the backend configuration, Terraform detects it during `terraform init` and prompts to migrate the state. We can migrate the state to the new backend using `-migrate-state`. This ensures the existing infrastructure is still tracked correctly.
+
+## 7. What is a Dynamic Block in Terraform?
+
+**Answer:**
+A **dynamic block** is used when you need to create repeated nested blocks inside a resource without manually writing them multiple times. Think of it like a **`for` loop** for nested blocks.
+
+---
+
+### Without Dynamic Blocks
+Suppose you want to create multiple ingress rules in a Security Group. You would have to duplicate the `ingress` block manually for every single port:
+
+```hcl
+resource "aws_security_group" "web" {
+  name = "web-sg"
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+```
+
+---
+
+### With Dynamic Blocks
+By using a dynamic block, you can pass an array of values (like ports) and automatically iterate over them, drastically shortening your configuration and making it easier to maintain:
+
+```hcl
+variable "ports" {
+  default = [80, 443]
+}
+
+resource "aws_security_group" "web" {
+  name = "web-sg"
+
+  dynamic "ingress" {
+    for_each = var.ports
+
+    content {
+      from_port   = ingress.value
+      to_port     = ingress.value
+      protocol    = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+    }
+  }
+}
+```
+
+> **Senior Signal:** Overusing dynamic blocks can make your configuration complex and difficult to read. They are best reserved for clean module abstractions—such as dynamic security group rule tables, network ACLs, or complex block stores—where user inputs vary dynamically. Additionally, remember that you can customize the iterator name by adding `iterator = name` inside the block if you want to avoid defaulting to the block label itself.
