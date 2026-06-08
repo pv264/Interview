@@ -56,3 +56,19 @@ We implemented **AWS Auto Scaling** using the ALB metric **`RequestCountPerTarge
 When that threshold was exceeded, we scaled **Haystack** from 2 to 3 instances and **vLLM** from 1 to 2 instances. For higher traffic levels, we further scaled Haystack to 4 instances. We also configured scale-in policies to automatically return to baseline capacity when traffic decreased. This approach ensured high availability during traffic spikes while optimizing infrastructure costs during normal workloads.
 
 > **Senior Signal:** Mentioning both scale-out and **scale-in** policies is a massive green flag. Many engineers forget to design the scale-in process, leading to "cloud waste." Furthermore, explicitly walking the interviewer through the math (from 60 req/10s to the 180 threshold) proves that your scaling policies are strictly data-driven based on load testing, not just random guesses!
+
+## 3. Explain the request flow in your LLM application
+
+**Answer:**
+Here is the end-to-end request flow for our Retrieval-Augmented Generation (RAG) architecture:
+
+### Step-by-Step Execution Flow
+1. **Inbound Routing:** A user request first reaches the **Application Load Balancer (ALB)**, which routes it to a **Haystack** instance (CPU-based orchestration layer).
+2. **Context Retrieval:** **Haystack** generates an embedding for the query and performs a similarity search in the **Milvus** vector database to retrieve relevant document chunks.
+3. **Prompt Construction:** **Haystack** combines the retrieved context with the user's original question to build the final, enriched prompt.
+4. **LLM Inference:** The prompt is sent to the **vLLM** service (GPU-based instance) for inference.
+5. **Response Delivery:** **vLLM** generates the final response and returns it to **Haystack**, which then sends it back out to the user through the **ALB**.
+
+
+
+> **Senior Signal:** Because **Haystack** spends significant time *waiting* for embedding generation, vector searches, and LLM inference to complete (I/O wait time), CPU utilization alone does not accurately represent the actual application load. Highlighting this architectural reality perfectly explains *why* you chose to use **`RequestCountPerTarget`** instead of CPU metrics for your Auto Scaling strategy!
