@@ -51,3 +51,16 @@ Because Tableau enforces strict multi-tenancy and permission inheritance, if the
 * We locked down permissions at the **Project level** in Tableau Server and enabled "Locked project permissions" to ensure that child workbooks and datasources automatically inherited the correct security settings, preventing ad-hoc configuration drift.
 
 > **Senior Signal:** Permission errors are the number one operational headache when automating BI workflows. A great way to handle this proactively is to include a pre-flight "Permission Check" stage in your Jenkinsfile. Before attempting a heavy upload of `.twbx` or `.tdsx` files, the script can hit a lightweight API endpoint to verify that the token has valid access to the target project ID. If it doesn't, the pipeline fails immediately with a clear, actionable error message before wasting time on compiling or transferring assets.
+
+## 4 How did you roll back a failed Tableau deployment?
+
+**Answer:**
+In our CI/CD process, we typically used **`git revert`** to roll back a failed deployment.
+
+### The Rollback Process:
+* If a specific commit (e.g., **Commit C**) introduced an issue in a **Tableau workbook**, we would run `git revert <commit-C>`.
+* This command creates a **new commit** that completely reverses the changes made in the problematic commit.
+* Once the revert commit was pushed to the main branch, **Jenkins** automatically triggered the deployment pipeline.
+* The pipeline then republished the **last known good version** of the workbook to the **Tableau Server**.
+
+> **Senior Signal:** Using `git revert` (often referred to as "rolling forward" to fix an issue) is the industry-standard GitOps approach. By doing this instead of manually restoring a backup directly in the Tableau Server UI, you ensure that the Git repository strictly remains the **Single Source of Truth** for all of your environments.
