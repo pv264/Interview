@@ -124,3 +124,5 @@ Update existing Tableau content
 After deployment, the script signed out.
 
 Senior Signal: Why Use PAT Instead of Username/Password? Most organizations prefer Personal Access Tokens (PATs) because they are more secure than storing passwords, are easier to rotate, and can be revoked without affecting user accounts. This makes them perfectly suited for automation tools like Jenkins.
+
+
