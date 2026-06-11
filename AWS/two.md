@@ -35,3 +35,33 @@ In Kubernetes, an **Ingress Controller** and an **ALB (Application Load Balancer
 Therefore, in EKS environments, **both are commonly used together**.
 
 > **Senior Signal:** To sound like a true expert, specifically name the **AWS Load Balancer Controller**. This is the standard Ingress Controller used in modern EKS setups. You can also mention that it supports routing traffic directly to Pod IPs (using `target-type: ip` with the AWS VPC CNI), which bypasses `kube-proxy` entirely and reduces network hops and latency!
+
+## 4 How do Ingress, Ingress Controller, and ALB work together in Kubernetes?
+
+**Answer:**
+In Kubernetes, **Ingress**, the **Ingress Controller**, and the **ALB** work closely together to manage external access to your microservices.
+
+### 1. Ingress (The Rules)
+**Ingress** is a Kubernetes resource that defines the routing rules. 
+* For example, it dictates that traffic to `/orders` goes to the order service, and traffic to `/payments` goes to the payment service.
+* In simple terms, it defines the **desired state**.
+
+### 2. Ingress Controller (The Implementer)
+The **AWS Load Balancer Controller** acts as the **Ingress Controller**. 
+* It continuously watches these Ingress resources within the cluster. 
+* It automatically creates and configures an **AWS Application Load Balancer (ALB)**, including setting up the necessary listeners, target groups, and routing rules.
+* In simple terms, it **implements** the desired state.
+
+### 3. ALB (The Traffic Handler)
+The **Application Load Balancer (ALB)** is the actual AWS resource that receives real user traffic. 
+* It evaluates the incoming requests and forwards them to the correct Kubernetes services and pods based on those rules.
+* In simple terms, it **handles the actual traffic**.
+
+---
+
+### Summary
+* **Ingress** defines the desired state.
+* **Ingress Controller** implements it.
+* **ALB** handles the actual traffic.
+
+> **Senior Signal:** Being able to clearly separate the logical definition (Ingress) from the physical implementation (ALB) shows a strong grasp of Kubernetes architecture. Mentioning the **AWS Load Balancer Controller** specifically highlights your practical, real-world experience with EKS, as it bridges the gap between Kubernetes-native YAML configurations and actual AWS cloud infrastructure.
