@@ -96,3 +96,16 @@ Here is a breakdown of the most commonly used Route 53 routing policies:
 * **Use case:** Simple, DNS-level load balancing across multiple healthy web servers.
 
 > **Senior Signal:** To show real-world experience in an interview, frame these practically: "In production, I've typically seen **Latency-Based Routing** for global applications, **Weighted Routing** for canary deployments, and **Failover Routing** combined with strict Route 53 Health Checks for cross-region disaster recovery scenarios."
+
+## Which Route 53 routing policies are most relevant to your GenAI architecture?
+
+**Answer:**
+In our GenAI architecture, the most relevant Route 53 routing policies would be **Weighted**, **Latency-Based**, and **Failover** Routing. 
+
+Here is how each applies to our specific workload:
+
+* **Weighted Routing (Canary Deployments):** This can be used when upgrading our infrastructure components, such as deploying new **Haystack** or **vLLM** versions. By assigning weights, we can gradually shift a small percentage of traffic to the new version to monitor for errors before fully cutting over.
+* **Latency-Based Routing (Performance):** Generative AI applications are highly sensitive to network latency. This policy can direct users to the nearest AWS region to reduce the network transit time, ultimately lowering the overall "Time to First Token" (TTFT) and prompt response time.
+* **Failover Routing (Disaster Recovery):** This can support disaster recovery (DR) by monitoring our primary environment's health checks and automatically redirecting traffic to a secondary region if the primary Haystack/vLLM stack becomes unavailable.
+
+> **Senior Signal:** Because the **vLLM** layer requires expensive GPU instances, running a traditional Active-Passive disaster recovery setup with Failover Routing can be highly inefficient due to idle GPU costs. A strong architectural talking point is advocating for an **Active-Active** setup using Latency-Based Routing across multiple regions. This ensures all provisioned GPUs are actively serving traffic to justify their cost, while inherently providing disaster recovery if one region goes down!
