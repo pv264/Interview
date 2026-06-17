@@ -46,3 +46,18 @@ To resolve the issue, I would implement the following architectural fixes:
 After implementing the fixes, I would continue to monitor the application latency and NAT Gateway CloudWatch metrics to ensure the issue is completely resolved.
 
 > **Senior Signal:** Pointing out **VPC Endpoints** is a great technical answer, but emphasizing the *cost* aspect makes it a Senior answer. NAT Gateways charge per GB of data processed. By routing S3 or DynamoDB heavy traffic through a **Gateway VPC Endpoint** (which is free), you not only solve the port exhaustion and latency issues, but you also completely eliminate the NAT data processing fees for that traffic, often saving the company a massive amount of money!
+
+
+## 2. How do you restrict access to a specific object and specific user in S3?
+
+**Answer:**
+To restrict access to a specific object in S3 for only one specific IAM user, I create an **S3 bucket policy** that grants access only to that user’s IAM ARN for that exact object key, and explicitly denies access to everyone else.
+
+In the policy, I specify:
+* **Principal:** The specific IAM user's ARN.
+* **Resource:** The exact object ARN (e.g., `arn:aws:s3:::my-bucket/my-specific-file.txt`).
+* **Action:** The required permission (for example, `s3:GetObject`).
+
+This ensures that only that designated user can access that object, regardless of the baseline permissions other users or roles might have.
+
+> **Senior Signal:** To make this implementation absolutely bulletproof, mention that you would use an **Explicit Deny** statement combined with a **`NotPrincipal`** element in the bucket policy. Because AWS always evaluates an explicit `Deny` over any `Allow` permissions, this approach guarantees that absolutely no one else—not even an AWS Administrator with `s3:*` privileges—can access that specific object.
