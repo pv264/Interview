@@ -106,6 +106,23 @@ Here is how each applies to our specific workload:
 
 * **Weighted Routing (Canary Deployments):** This can be used when upgrading our infrastructure components, such as deploying new **Haystack** or **vLLM** versions. By assigning weights, we can gradually shift a small percentage of traffic to the new version to monitor for errors before fully cutting over.
 * **Latency-Based Routing (Performance):** Generative AI applications are highly sensitive to network latency. This policy can direct users to the nearest AWS region to reduce the network transit time, ultimately lowering the overall "Time to First Token" (TTFT) and prompt response time.
-* **Failover Routing (Disaster Recovery):** This can support disaster recovery (DR) by monitoring our primary environment's health checks and automatically redirecting traffic to a secondary region if the primary Haystack/vLLM stack becomes unavailable.
+* **Failover Routing (Disaster Recovery):** This can support disaster recovery (DR) by monitoring our primary environment's health checks and automatically redirecting traffic to a secondary region if the primary Haystack/vLLM stack becomes 
+unavailable.
+
+
+## 4. How do you troubleshoot DNS issues?
+
+**Answer:**
+When troubleshooting DNS issues, I follow a layered approach to identify where the resolution is failing: client side, DNS server side, or application side.
+
+### Troubleshooting Steps:
+1. **Initial Verification:** I first verify whether the domain resolves using tools like `nslookup` or `dig`.
+2. **If Resolution Fails (DNS Layer):** I check **Route 53** records, hosted zones, and DNS propagation.
+3. **If Resolution Works (Network/App Layer):** I test connectivity to the target resource and verify the **ALB**, **Security Groups**, **NACLs**, and application health.
+4. **AWS-Specific Checks:** In AWS environments, I also validate **Route 53 health checks** and ensure records point to the correct endpoints.
+
+This step-by-step process helps isolate whether the issue is strictly a DNS problem, a networking configuration issue, or a failure within the application itself.
+
+> **Senior Signal:** Using `dig` and `nslookup` to immediately separate the DNS layer from the network/application layer demonstrates a structured, methodical approach to troubleshooting. Mentioning Route 53 health checks is especially relevant for cloud-native architectures; a failing health check in a Failover or Multi-Value routing policy will cause DNS to intentionally stop resolving an endpoint, which often masquerades as a "DNS failure" to the end user!
 
 > **Senior Signal:** Because the **vLLM** layer requires expensive GPU instances, running a traditional Active-Passive disaster recovery setup with Failover Routing can be highly inefficient due to idle GPU costs. A strong architectural talking point is advocating for an **Active-Active** setup using Latency-Based Routing across multiple regions. This ensures all provisioned GPUs are actively serving traffic to justify their cost, while inherently providing disaster recovery if one region goes down!
