@@ -1,4 +1,4 @@
-## What is Cloud Network Security?
+## 1. What is Cloud Network Security?
 
 **Answer:**
 **Cloud network security** is the practice of securing network infrastructure, traffic, applications, and data within cloud environments such as AWS, Azure, or GCP. It ensures the confidentiality and integrity of cloud resources by controlling access, segmenting networks, encrypting traffic, and monitoring for threats.
@@ -27,3 +27,27 @@ To implement these concepts in AWS, I would design a multi-tier architectural pa
 5. **Security & Governance:** Enable **AWS WAF** at the edge, configure **VPC Flow Logs** for network visibility, and use **IAM policies** to enforce least-privilege access.
 
 > **Senior Signal:** Architecting a multi-tier VPC network with strict security boundary rules demonstrates a rock-solid understanding of defense-in-depth strategies. Emphasizing the **Zero Trust model** and leveraging stateful controls (Security Groups) alongside stateless ones (NACLs) ensures that your network perimeter remains highly resilient against lateral movement during a security event.
+
+## 2. What is the difference between a Security Group and a NACL?
+
+**Answer:**
+**Security Groups** and **NACLs** (Network Access Control Lists) are both AWS network security mechanisms, but they operate at different levels and handle traffic states differently.
+
+### Core Differences
+* **Operating Level:** A **Security Group** acts as a virtual firewall at the **instance level** (e.g., attached directly to EC2 or RDS instances), whereas a **NACL** acts as a firewall at the **subnet level** (protecting everything inside that subnet).
+* **Statefulness:** * **Security Groups are stateful:** If inbound traffic is allowed, the response/return traffic is automatically allowed, regardless of your outbound rules.
+  * **NACLs are stateless:** You must explicitly allow both inbound and outbound traffic. If a request comes in, the network needs a specific outbound rule to allow the response back out.
+
+---
+
+### Real-World Application & Layered Security
+In one of my projects, we had an ALB, EC2 application servers, and an RDS database. We used Security Groups as the primary security mechanism:
+1. **ALB Security Group:** Allowed internet traffic on ports 80 and 443.
+2. **EC2 Security Group:** Allowed traffic *only* from the ALB Security Group.
+3. **RDS Security Group:** Allowed MySQL traffic *only* from the EC2 Security Group. 
+
+This ensured a layered, Zero Trust security model. 
+
+We used **NACLs** mainly as an additional subnet-level security layer. For example, when a suspicious IP range was identified, we added a **deny rule** in the NACL to block that traffic for the entire subnet without having to modify dozens of individual Security Groups.
+
+> **Senior Signal:** Emphasizing that Security Groups allow rule referencing by *Group ID* (instead of static IPs) is a massive green flag for cloud-native architecture. Furthermore, noting that NACLs are perfect for incident response as a "kill switch" (because they evaluate numbered rules in order from lowest to highest and explicitly support DENY rules, unlike Security Groups) demonstrates strong SecOps maturity.
