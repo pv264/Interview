@@ -71,3 +71,18 @@ When the CI/CD pipeline reaches the deployment stage, Jenkins executes commands 
 * If the permissions are valid, the API Server accepts the request, stores the desired state in `etcd`, and the scheduler and `kubelet` work together to create or update the Pods on the worker nodes.
 
 > **Senior Signal:** Using a dedicated Service Account is considered significantly more secure than giving Jenkins broad `cluster-admin` access. It allows us to strictly enforce the **principle of least privilege**, granting Jenkins only the exact permissions it needs to deploy specific applications.
+
+## 3 .How does Jenkins running on EC2 authenticate to ECR?
+
+**Answer:**
+In our setup, Jenkins runs on an Amazon EC2 instance and authenticates to Amazon ECR securely by leveraging an attached **IAM role (Instance Profile)** rather than relying on static, hardcoded credentials. 
+
+Here is how the authentication and push process works step-by-step:
+
+### The Authentication Workflow
+1. **IAM Role Attachment:** The EC2 instance hosting Jenkins is assigned an IAM role that contains the required ECR permissions (e.g., `ecr:GetAuthorizationToken`, `ecr:BatchCheckLayerAvailability`, `ecr:PutImage`, etc.).
+2. **Credential Retrieval:** During the pipeline, Jenkins executes `aws ecr get-login-password`. The AWS CLI automatically reaches out to the **EC2 Instance Metadata Service (IMDS)** to retrieve temporary, auto-rotating credentials based on the attached IAM role.
+3. **Docker Login:** AWS validates the role and returns a temporary authentication token (valid for 12 hours). Jenkins pipes this token directly into the `docker login` command to authenticate the local Docker daemon with the ECR registry.
+4. **Build & Push:** Jenkins builds the Docker image, tags it with the specific ECR repository URI, and finally pushes it to Amazon ECR.
+
+> **Senior Signal:** Highlighting that this approach eliminates the need to store long-lived AWS Access Keys inside Jenkins is a major security win. To take this answer to the next level in an interview, mention that you enforce **IMDSv2** on the Jenkins EC2 instance. IMDSv2 requires session tokens for metadata retrieval, which protects the instance against SSRF (Server-Side Request Forgery) attacks that could otherwise be used to steal the temporary IAM credentials.
