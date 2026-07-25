@@ -52,3 +52,44 @@ Here is exactly what happens step-by-step:
 * **Kube-Proxy:** Plumbs the network paths to expose the workloads.
 
 > **Senior Signal:** Walking through the lifecycle of a `kubectl` command from the client API request down to the node runtime shows a comprehensive understanding of the Kubernetes architecture. Highlighting the separation between the **Scheduler** (which only chooses the node) and the **Kubelet** (which actually runs the runtime commands) is a key differentiator that separates senior engineers from those who treat Kubernetes like a black box.
+
+## 4 .What happens when a container image isn't available in ECR, and how do you troubleshoot it?
+
+**Answer:**
+When an image isn't available in Amazon ECR, the issue isn't just that the container fails to start—it triggers a specific failure in the underlying image pull workflow.
+
+### The Failure Workflow
+1. **The Request:** The `kubelet` running on the worker node instructs the container runtime to pull the specified image.
+2. **Authentication & Fetch:** The runtime authenticates with ECR and attempts to download the requested image.
+3. **The Rejection:** ECR cannot find the requested tag and returns an error, which the container runtime reports back to the `kubelet`.
+4. **State Transition:** Kubernetes first reports an **`ErrImagePull`** state. Shortly after, as it begins retrying the pull request using an exponential backoff delay, the pod transitions into the **`ImagePullBackOff`** state.
+
+### Troubleshooting Steps
+In a production environment, I troubleshoot this systematically by checking the following:
+* **Check Pod Events:** Run `kubectl describe pod <pod-name>` to look at the events at the bottom. This reveals the exact error message returned by the runtime.
+* **Verify the Deployment:** Double-check the Deployment YAML to ensure there are no typos in the image URI or the specific tag.
+* **Confirm in ECR:** Check the AWS Console or use the AWS CLI to confirm that the specific image tag actually exists in the target ECR repository.
+* **Review CI/CD:** Review the CI/CD pipeline's push stage (e.g., in Jenkins or GitHub Actions) to ensure the image build and push were actually successful.
+* **Validate IAM Permissions:** Ensure the worker node's IAM role has the necessary permissions (`ecr:BatchGetImage`, `ecr:GetDownloadUrlForLayer`) to pull from ECR.
+* **Check Network Connectivity:** Ensure the nodes have a valid network path to ECR, either through a NAT Gateway or via VPC Endpoints (AWS PrivateLink).
+
+> **Senior Signal:** Pointing out that an `ImagePullBackOff` isn't *always* a missing image is a great way to demonstrate real-world experience. Often, the image tag is perfectly correct, but the worker node lacks the correct IAM permissions or network routing to reach ECR, which results in the exact same Kubernetes error state. Emphasizing `kubectl describe pod` as the fastest way to differentiate a "Not Found" error from an "Unauthorized" or "Timeout" error shows strong operational maturity.
+
+## 5. What happens when a Pod's main application process crashes, and how do you troubleshoot it?
+
+**Answer:**
+When a Pod's main application process crashes, Kubernetes relies on the `kubelet` and the container's predefined restart policy to handle the failure and attempt recovery.
+
+### The Crash and Recovery Workflow
+1. **Detection:** The `kubelet` running on the worker node detects that the container's primary process has exited. 
+2. **Immediate Restart:** For a Deployment, the restart policy is typically set to `Always`. Therefore, the `kubelet` automatically restarts the container within the same Pod. The Pod name and IP address remain identical, but you will see the `RESTARTS` count increase.
+3. **CrashLoopBackOff:** If the application keeps crashing repeatedly, Kubernetes intervenes to protect the cluster's resources. It transitions the Pod into a **`CrashLoopBackOff`** state and retries the restarts with exponentially increasing delays (e.g., 10s, 20s, 40s, up to 5 minutes).
+
+### Troubleshooting Steps
+To diagnose and resolve the crashing pod, I follow this process:
+* **Check Pod Status:** Run `kubectl get pods` to observe the current state and see how many times it has restarted.
+* **Inspect the Pod:** Run `kubectl describe pod <pod-name>`. I specifically look at the `State` and `Reason` (to see if it exited with an `Error` or an `OOMKilled` status) and review the Events at the bottom for probe failures.
+* **Review Logs:** I check the application logs to find the exact exception. 
+* **Identify Root Cause & Fix:** Based on the logs and describe output, I determine if the issue is an application code error, an Out Of Memory (OOM) kill, a failing liveness probe, or a missing configuration (like a Secret or ConfigMap), and apply the appropriate configuration change or code rollback.
+
+> **Senior Signal:** Emphasizing how you check the logs is a major differentiator here. A junior engineer will just run `kubectl logs <pod-name>`, which only shows the logs for the *current*, newly restarted container (which might be empty). A senior engineer will explicitly state they run **`kubectl logs <pod-name> --previous`** (or `-p`) to retrieve the logs of the container that actually crashed, which contains the crucial stack trace or error message!
