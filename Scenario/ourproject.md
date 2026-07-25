@@ -72,3 +72,34 @@ Here is the end-to-end request flow for our Retrieval-Augmented Generation (RAG)
 
 
 > **Senior Signal:** Because **Haystack** spends significant time *waiting* for embedding generation, vector searches, and LLM inference to complete (I/O wait time), CPU utilization alone does not accurately represent the actual application load. Highlighting this architectural reality perfectly explains *why* you chose to use **`RequestCountPerTarget`** instead of CPU metrics for your Auto Scaling strategy!
+
+## 4 How do you monitor and troubleshoot high CPU utilization alerts?
+
+**Answer:**
+In our environment, we have a robust monitoring stack: we monitor infrastructure using **Prometheus** with **Node Exporter**, visualize the metrics in **Grafana**, and configure **Alertmanager** to route critical alerts to Slack or PagerDuty. 
+
+If we receive an alert that CPU usage has stayed above 90% for five minutes, I follow this structured troubleshooting process:
+
+### 1. Triage in Grafana
+The first thing I do is open the Grafana dashboard to understand the blast radius. 
+* I determine whether the issue affects a single isolated server or multiple servers across the cluster.
+* I correlate the CPU spike with other related metrics, such as memory utilization, network I/O, and the application request rate.
+
+### 2. System-Level Investigation
+Next, I SSH into the affected EC2 instance. 
+* I run command-line tools like `top` or `htop` to identify exactly which process or PID is consuming the CPU cycles.
+
+### 3. Traffic vs. Application Issue
+If I determine the application process itself is causing the spike, I need to know *why*:
+* **Traffic Spike:** I check the ALB request metrics and Auto Scaling Group (ASG) activity to see if there is a legitimate surge in user traffic.
+* **Application Issue:** If traffic is normal, I investigate recent deployments, review application logs, and check for any resource-intensive scheduled background jobs running at that time.
+
+### 4. Remediation & Verification
+Based on the root cause identified, I take the appropriate action:
+* Scale the application (if it's a legitimate traffic spike).
+* Roll back a recent deployment (if bad code was introduced).
+* Optimize the application or reschedule heavy background jobs to off-peak hours.
+
+Finally, I verify in Grafana that the CPU utilization has returned to baseline levels and confirm that the overall application is healthy.
+
+> **Senior Signal:** What sets this response apart is the distinction between a **traffic-induced spike** and an **application-induced spike**. Junior engineers often see high CPU and immediately assume they need to scale up or reboot the server. A senior engineer checks the ALB/ASG first to see if scaling is actually the right answer, or if a recent deployment introduced an infinite loop or inefficient query that requires a rollback instead.
