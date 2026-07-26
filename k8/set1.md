@@ -118,224 +118,45 @@ During an active node failure, I would investigate and monitor the situation usi
 
 
 ## Your company has a production application running on EKS, After a new deployment users start reporting intermittent 502/503 errors. CPU amd memory usage of the pods looks normal and pod are in running state how would you trouble shoot the issue step by step
-Answer:
-Whenever I troubleshoot production issues, I don't jump directly to the application. I follow the request path from the user to the application so I don't miss anything.
 
-## Step 1: Verify the deployment
-First, I verify whether the deployment completed successfully.
 
+Here’s how I’d explain it in an interview:
 
-kubectl get deployment
-Example:
+---
 
-Plaintext
-NAME               READY   UP-TO-DATE   AVAILABLE
-configurator-api   5/5     5            5
-If the desired replicas aren't available, I inspect the deployment.
+When users start seeing intermittent 502/503s right after a deployment on EKS, and the pods look fine (Running, normal CPU/memory), I never jump straight into the application code. I systematically follow the request path from the user all the way to the pod so I don’t miss anything outside the app.
 
-Bash
-kubectl describe deployment configurator-api
-I'm looking for:
+## Step 1 – Verify the deployment
+I first confirm the deployment itself succeeded: `kubectl get deployment` and then `describe` it. I’m looking for replica failures, image pull issues, probe failures, or bad rollout events. If the desired number of pods isn’t available, that’s already a red flag.
 
-Replica creation failures
+## Step 2 – Check pod status
+Next I run `kubectl get pods -o wide`. Even if everything shows Running, that only means the container process is up — it doesn’t guarantee the application is healthy or ready to serve traffic.
 
-Image pull failures
+## Step 3 – Check pod logs
+Because the problem started right after the release, I immediately look at the application logs (`kubectl logs` and `--previous` if there were restarts). I’m hunting for connection errors, NPEs, timeouts, external dependency failures, or configuration mistakes.
 
-Probe failures
+## Step 4 – Verify readiness probes
+This is one of the most common culprits after deployments. I describe the pods and check whether the readiness probe is failing. If it is, Kubernetes removes those pods from the Service endpoints, which directly causes intermittent 502/503s for users.
 
-Recent rollout events
+## Step 5 – Verify Service endpoints
+I check what the Service is actually routing to with `kubectl get endpoints` or `describe svc`. An empty or incomplete endpoints list means the Service has no healthy backends — classic cause of 503s.
 
-If everything looks good, I move on.
+## Step 6 – Verify the Ingress
+I inspect the Ingress resource to confirm the correct Service name, port, host, and path rules. A very frequent post-deployment mistake is the application now listening on a different port while the Ingress is still pointing to the old one.
 
-Step 2: Check Pod status
-Next, I verify the Pods.
+## Step 7 – Check ALB target health
+Since we’re on EKS with an AWS ALB, I look at the target group health (console or `aws elbv2 describe-target-health`). Unhealthy targets cause the ALB to return 503s even when the pods themselves look fine.
 
-Bash
-kubectl get pods -o wide
-Example:
+## Step 8 – Verify health-check paths
+I compare the ALB health-check path with what the application actually exposes. If the team changed `/health` to `/healthz` (or similar) in the new release but forgot to update the target group, every health check fails and targets go unhealthy.
 
-Plaintext
-NAME                         READY   STATUS    RESTARTS
-configurator-api-abc12       1/1     Running   0
-configurator-api-def34       1/1     Running   0
-Although the Pods are running, "Running" only means the container is running. It doesn't guarantee the application is healthy.
+## Step 9 – Test the service internally
+To isolate the problem, I spin up a debug pod and curl/wget the Service from inside the cluster. If that succeeds, I know the application is fine and the issue is between the ALB/Ingress and Kubernetes (security groups, target group, etc.).
 
-Step 3: Check Pod logs
-Since this issue started immediately after a deployment, I inspect the application logs.
+## Step 10 – Check application response time
+Sometimes the new version is just slower. If request processing exceeds the ALB idle timeout, clients get 502s while the pods still appear healthy.
 
-Bash
-kubectl logs configurator-api-abc12
-If there are multiple replicas:
+## Step 11 – Review recent deployment changes & rollback if needed
+Finally I compare the new version against the previous one — env vars, ConfigMaps, Secrets, image tag, probes, ports, etc. — using rollout history. If I suspect the release introduced the problem, I do a `kubectl rollout undo`. If the errors disappear, we’ve confirmed the new deployment was the cause.
 
-Bash
-kubectl logs configurator-api-abc12
-kubectl logs configurator-api-def34
-I'm looking for:
-
-Database connection failures
-
-NullPointerException
-
-Timeouts
-
-External API failures
-
-Configuration errors
-
-If the Pods restarted recently:
-
-Bash
-kubectl logs --previous configurator-api-abc12
-Step 4: Verify Readiness Probe
-This is one of the most common causes after deployments.
-I check:
-
-Bash
-kubectl describe pod configurator-api-abc12
-Example:
-
-Plaintext
-Readiness probe failed
-HTTP probe failed with statuscode: 500
-If the readiness probe is failing, Kubernetes removes that Pod from the Service endpoints.
-If only some Pods are Ready and others are not, users may experience intermittent failures during rollouts or when capacity is reduced.
-
-Step 5: Verify Service Endpoints
-Now I verify which Pods the Service is actually routing traffic to.
-
-Bash
-kubectl get svc
-Then:
-
-Bash
-kubectl describe svc configurator-api
-or
-
-Bash
-kubectl get endpoints configurator-api
-Example:
-
-Plaintext
-10.1.2.10:8080
-10.1.2.11:8080
-10.1.2.12:8080
-If the endpoints list is empty, the Service has no healthy Pods to forward requests to.
-That immediately explains a 503.
-
-Step 6: Verify the Ingress
-Now I inspect the Ingress.
-
-Bash
-kubectl get ingress
-Then:
-
-Bash
-kubectl describe ingress configurator-api
-I'm checking:
-
-Correct Service name
-
-Correct Service port
-
-Correct host
-
-Correct path rules
-
-A wrong backend port is a very common issue after deployments.
-For example, Application now listens on 8081 but Ingress still forwards to 8080.
-The ALB cannot reach the application.
-
-Step 7: Check ALB Target Health
-Since we're using EKS with an AWS Application Load Balancer, I verify whether the targets are healthy.
-
-AWS Console → EC2 → Target Groups → Health Status
-
-or
-
-Bash
-aws elbv2 describe-target-health --target-group-arn <target-group-arn>
-Example:
-
-Plaintext
-Target        10.1.2.10
-Unhealthy     Health check failed
-If targets are unhealthy, the ALB returns: 503 Service Unavailable.
-Now I know the problem is between the ALB and Kubernetes.
-
-Step 8: Verify Health Check
-I compare:
-
-ALB Health Check: /health
-
-Application: /actuator/health
-
-Suppose developers changed /health to /healthz during the release.
-The ALB keeps checking /health.
-Every health check fails.
-Targets become unhealthy.
-Users receive 503 even though the Pods are running.
-
-Step 9: Test the Service Internally
-To isolate whether the issue is with the application or the load balancer, I test from inside the cluster.
-
-Bash
-kubectl run debug --rm -it --image=busybox -- sh
-Inside the Pod:
-
-Bash
-wget -O- http://configurator-api:8080/actuator/health
-or
-
-Bash
-curl http://configurator-api:8080/actuator/health
-If this succeeds, the application is working inside Kubernetes.
-Then I know the issue is probably:
-
-ALB
-
-Ingress
-
-Security Group
-
-Target Group
-
-Step 10: Check Application Response Time
-Sometimes the application is very slow after deployment.
-The ALB waits only a certain amount of time before returning an error.
-
-Application log Request Processing: 45 seconds
-
-ALB Idle Timeout: 30 seconds
-
-The client receives: 502 Bad Gateway.
-The Pods still look healthy.
-
-Step 11: Check Recent Deployment Changes
-Since the issue started after deployment, I compare the new version with the previous one.
-I check:
-
-Environment variables
-
-ConfigMaps
-
-Secrets
-
-Image tag
-
-Resource limits
-
-Health probes
-
-Service port
-
-Ingress configuration
-
-If needed,
-
-Bash
-kubectl rollout history deployment configurator-api
-If I suspect the deployment caused the issue, I can roll back.
-
-Bash
-kubectl rollout undo deployment configurator-api
-If the errors disappear, I've confirmed the new deployment introduced the issue.
+That end-to-end path — from deployment → pods → probes → Service → Ingress → ALB → internal test → response time → change comparison — usually surfaces the root cause without wasting time guessing.
