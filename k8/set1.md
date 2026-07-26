@@ -117,14 +117,14 @@ During an active node failure, I would investigate and monitor the situation usi
 > **Senior Signal:** A great detail to add in an interview is mentioning the **`pod-eviction-timeout`**. By default, Kubernetes waits 5 minutes after a node goes `NotReady` before it forcefully evicts the pods and reschedules them (to prevent thrashing in case of a brief network blip). Mentioning this built-in 5-minute delay shows you understand the nuances of Kubernetes failure states and how they impact actual application downtime!
 
 
-Markdown
+## Your company has a production application running on EKS, After a new deployment users start reporting intermittent 502/503 errors. CPU amd memory usage of the pods looks normal and pod are in running state how would you trouble shoot the issue step by step
 Answer:
 Whenever I troubleshoot production issues, I don't jump directly to the application. I follow the request path from the user to the application so I don't miss anything.
 
 ## Step 1: Verify the deployment
 First, I verify whether the deployment completed successfully.
 
-```bash
+
 kubectl get deployment
 Example:
 
