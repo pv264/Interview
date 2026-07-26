@@ -93,3 +93,249 @@ To diagnose and resolve the crashing pod, I follow this process:
 * **Identify Root Cause & Fix:** Based on the logs and describe output, I determine if the issue is an application code error, an Out Of Memory (OOM) kill, a failing liveness probe, or a missing configuration (like a Secret or ConfigMap), and apply the appropriate configuration change or code rollback.
 
 > **Senior Signal:** Emphasizing how you check the logs is a major differentiator here. A junior engineer will just run `kubectl logs <pod-name>`, which only shows the logs for the *current*, newly restarted container (which might be empty). A senior engineer will explicitly state they run **`kubectl logs <pod-name> --previous`** (or `-p`) to retrieve the logs of the container that actually crashed, which contains the crucial stack trace or error message!
+
+## 6 What happens when a worker node goes down, and how do you troubleshoot it?
+
+**Answer:**
+When a worker node goes down, Kubernetes' self-healing mechanisms automatically detect the failure and reschedule the affected workloads to maintain high availability.
+
+### The Failure and Recovery Workflow
+1. **Detection:** The `kubelet` on the failed node stops sending its regular heartbeats to the API Server. The Node Controller detects these missing heartbeats and marks the node's status as **`NotReady`**.
+2. **Pod Unavailability:** The Pods running on that specific node become unavailable.
+3. **ReplicaSet Intervention:** If those Pods are managed by a Deployment, the ReplicaSet notices that the number of available replicas has dropped below the desired count and creates replacement Pods.
+4. **Rescheduling & Execution:** The Scheduler evaluates the cluster and places these newly created Pods onto healthy nodes. The `kubelets` on those selected nodes then start the new containers.
+5. **Traffic Routing:** Once the readiness probes for the new Pods pass, the Service updates its endpoints, and network traffic is seamlessly routed to the newly provisioned Pods.
+
+### Troubleshooting Steps
+During an active node failure, I would investigate and monitor the situation using the following methods:
+* **Node Status:** Run `kubectl get nodes` and `kubectl describe node <node-name>` to investigate *why* it went down (e.g., checking for resource exhaustion or network disconnects).
+* **Blast Radius:** Run `kubectl get pods -o wide` to see exactly which pods were impacted by the downed node.
+* **Cluster Activity:** Run `kubectl get events` to track cluster-wide control plane actions and errors.
+* **Monitor Recovery:** Run `kubectl get pods -w` to actively watch the replacement Pods being recreated and initialized in real time.
+* **Capacity Check:** If the cluster doesn't have enough spare capacity to schedule the replacement Pods, I would verify whether the **Cluster Autoscaler** is successfully provisioning and adding new worker nodes to handle the load.
+
+> **Senior Signal:** A great detail to add in an interview is mentioning the **`pod-eviction-timeout`**. By default, Kubernetes waits 5 minutes after a node goes `NotReady` before it forcefully evicts the pods and reschedules them (to prevent thrashing in case of a brief network blip). Mentioning this built-in 5-minute delay shows you understand the nuances of Kubernetes failure states and how they impact actual application downtime!
+
+
+Markdown
+Answer:
+Whenever I troubleshoot production issues, I don't jump directly to the application. I follow the request path from the user to the application so I don't miss anything.
+
+## Step 1: Verify the deployment
+First, I verify whether the deployment completed successfully.
+
+```bash
+kubectl get deployment
+Example:
+
+Plaintext
+NAME               READY   UP-TO-DATE   AVAILABLE
+configurator-api   5/5     5            5
+If the desired replicas aren't available, I inspect the deployment.
+
+Bash
+kubectl describe deployment configurator-api
+I'm looking for:
+
+Replica creation failures
+
+Image pull failures
+
+Probe failures
+
+Recent rollout events
+
+If everything looks good, I move on.
+
+Step 2: Check Pod status
+Next, I verify the Pods.
+
+Bash
+kubectl get pods -o wide
+Example:
+
+Plaintext
+NAME                         READY   STATUS    RESTARTS
+configurator-api-abc12       1/1     Running   0
+configurator-api-def34       1/1     Running   0
+Although the Pods are running, "Running" only means the container is running. It doesn't guarantee the application is healthy.
+
+Step 3: Check Pod logs
+Since this issue started immediately after a deployment, I inspect the application logs.
+
+Bash
+kubectl logs configurator-api-abc12
+If there are multiple replicas:
+
+Bash
+kubectl logs configurator-api-abc12
+kubectl logs configurator-api-def34
+I'm looking for:
+
+Database connection failures
+
+NullPointerException
+
+Timeouts
+
+External API failures
+
+Configuration errors
+
+If the Pods restarted recently:
+
+Bash
+kubectl logs --previous configurator-api-abc12
+Step 4: Verify Readiness Probe
+This is one of the most common causes after deployments.
+I check:
+
+Bash
+kubectl describe pod configurator-api-abc12
+Example:
+
+Plaintext
+Readiness probe failed
+HTTP probe failed with statuscode: 500
+If the readiness probe is failing, Kubernetes removes that Pod from the Service endpoints.
+If only some Pods are Ready and others are not, users may experience intermittent failures during rollouts or when capacity is reduced.
+
+Step 5: Verify Service Endpoints
+Now I verify which Pods the Service is actually routing traffic to.
+
+Bash
+kubectl get svc
+Then:
+
+Bash
+kubectl describe svc configurator-api
+or
+
+Bash
+kubectl get endpoints configurator-api
+Example:
+
+Plaintext
+10.1.2.10:8080
+10.1.2.11:8080
+10.1.2.12:8080
+If the endpoints list is empty, the Service has no healthy Pods to forward requests to.
+That immediately explains a 503.
+
+Step 6: Verify the Ingress
+Now I inspect the Ingress.
+
+Bash
+kubectl get ingress
+Then:
+
+Bash
+kubectl describe ingress configurator-api
+I'm checking:
+
+Correct Service name
+
+Correct Service port
+
+Correct host
+
+Correct path rules
+
+A wrong backend port is a very common issue after deployments.
+For example, Application now listens on 8081 but Ingress still forwards to 8080.
+The ALB cannot reach the application.
+
+Step 7: Check ALB Target Health
+Since we're using EKS with an AWS Application Load Balancer, I verify whether the targets are healthy.
+
+AWS Console → EC2 → Target Groups → Health Status
+
+or
+
+Bash
+aws elbv2 describe-target-health --target-group-arn <target-group-arn>
+Example:
+
+Plaintext
+Target        10.1.2.10
+Unhealthy     Health check failed
+If targets are unhealthy, the ALB returns: 503 Service Unavailable.
+Now I know the problem is between the ALB and Kubernetes.
+
+Step 8: Verify Health Check
+I compare:
+
+ALB Health Check: /health
+
+Application: /actuator/health
+
+Suppose developers changed /health to /healthz during the release.
+The ALB keeps checking /health.
+Every health check fails.
+Targets become unhealthy.
+Users receive 503 even though the Pods are running.
+
+Step 9: Test the Service Internally
+To isolate whether the issue is with the application or the load balancer, I test from inside the cluster.
+
+Bash
+kubectl run debug --rm -it --image=busybox -- sh
+Inside the Pod:
+
+Bash
+wget -O- http://configurator-api:8080/actuator/health
+or
+
+Bash
+curl http://configurator-api:8080/actuator/health
+If this succeeds, the application is working inside Kubernetes.
+Then I know the issue is probably:
+
+ALB
+
+Ingress
+
+Security Group
+
+Target Group
+
+Step 10: Check Application Response Time
+Sometimes the application is very slow after deployment.
+The ALB waits only a certain amount of time before returning an error.
+
+Application log Request Processing: 45 seconds
+
+ALB Idle Timeout: 30 seconds
+
+The client receives: 502 Bad Gateway.
+The Pods still look healthy.
+
+Step 11: Check Recent Deployment Changes
+Since the issue started after deployment, I compare the new version with the previous one.
+I check:
+
+Environment variables
+
+ConfigMaps
+
+Secrets
+
+Image tag
+
+Resource limits
+
+Health probes
+
+Service port
+
+Ingress configuration
+
+If needed,
+
+Bash
+kubectl rollout history deployment configurator-api
+If I suspect the deployment caused the issue, I can roll back.
+
+Bash
+kubectl rollout undo deployment configurator-api
+If the errors disappear, I've confirmed the new deployment introduced the issue.
