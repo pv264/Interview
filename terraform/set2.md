@@ -157,3 +157,5 @@ resource "aws_subnet" "public" {
   count       = length(var.public_subnets)
   cidr_block  = var.public_subnets[count.index]
 }
+
+We used the length() function with count so Terraform automatically created one subnet for each CIDR block. If we added another subnet to the list later, Terraform created it automatically without changing the resource definition.
