@@ -233,7 +233,19 @@ If Terraform fails midway, I first analyze the exact error and verify which reso
 > **Senior Signal:** To prevent manual deletions from causing issues, implement **IAM policies** that restrict **Delete** permissions and use **`prevent_destroy`** lifecycle rules for critical resources like **RDS** or **S3 buckets**.
 ---
 
+
+
 ## 🔥 If Interviewer Asks: "Explain your Terraform Production Experience"
 
 **You can say:**
 > "In **production**, I use **S3 backend** with **DynamoDB locking**, maintain **separate states** per environment, enforce **CI/CD-only applies**, use **for_each** instead of **count**, implement **blue-green deployments** for **ASGs**, and manage **secrets** via **SSM**. I also ensure **drift detection** and **version-controlled reusable modules**."
+
+
+## What are Arguments and Attributes in Terraform?
+
+**Arguments** are the configuration values that we specify inside a Terraform resource block to tell Terraform how to create the resource. Examples include `ami`, `instance_type`, `cidr_block`, and `subnet_id`. 
+
+**Attributes** are the values that become available after the resource is created, such as the resource ID, ARN, public IP, or private IP. 
+
+In real projects, we often use these attributes as inputs for other resources. For example, when creating a subnet, the `vpc_id` argument is assigned the value `aws_vpc.main.id`, where `id` is an attribute returned by the VPC resource. This allows Terraform to automatically establish dependencies between resources.
+
