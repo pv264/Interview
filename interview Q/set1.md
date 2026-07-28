@@ -39,6 +39,27 @@ Finally, I monitor CloudWatch metrics, application logs, and ALB target health t
 
 This approach keeps the application available while safely applying OS patches.
 
+
+## 4 How do you perform EKS cluster upgrade?
+
+### Step 1: Preparation and Review
+When upgrading an EKS cluster, I start by reviewing the Kubernetes and AWS EKS release notes to identify any breaking changes, deprecated APIs, or compatibility issues with our applications and add-ons. Before making any changes, I verify that the cluster is healthy by checking that all nodes are in the Ready state and all pods are running without issues. I also ensure that backups are available and that I have a rollback plan if anything goes wrong.
+
+### Step 2: Control Plane Upgrade
+Next, I upgrade the EKS control plane using the AWS Management Console or the AWS CLI. Since the control plane is managed by AWS, the upgrade is handled by AWS with minimal disruption to the cluster. 
+
+### Step 3: Update Add-ons
+Once the control plane upgrade is complete, I update the EKS-managed add-ons such as the Amazon VPC CNI plugin, CoreDNS, and kube-proxy so they remain compatible with the new Kubernetes version.
+
+### Step 4: Worker Node Upgrade
+After that, I upgrade the managed worker node groups. AWS performs this as a rolling update by creating new nodes with the upgraded Kubernetes version, draining the old nodes, moving the pods to the new nodes, and then terminating the old nodes. This ensures that the application remains available throughout the upgrade.
+
+### Step 5: Validation
+Finally, I validate the upgrade by checking the Kubernetes version of all nodes, verifying that all pods and deployments are healthy, confirming that the application is accessible, and reviewing monitoring dashboards and logs to ensure there are no errors after the upgrade.
+
+### Short Interview Version (60–90 secon
+*(Note: Your text was cut off here, but I have retained exactly what was provided!)*
+
 ## 5 .Cost Optimization in DevOps
 
 Cost optimization is a crucial part of DevOps to ensure efficient resource utilization without compromising performance. Here are five best practices:
