@@ -131,3 +131,29 @@ If a resource is manually deleted from **AWS** but still exists in the **Terrafo
 For example, I can use the same **Terraform code** to create an **EC2 instance**, but by switching workspaces like **dev** and **prod**, **Terraform** will create separate instances for each environment because each workspace maintains its own state file.
 
  In our project, we maintained separate directories for dev and prod. Each environment had its own S3 backend and DynamoDB table for state locking, ensuring complete isolation and avoiding accidental impact across environments.”
+
+
+ ## 10 What are Functions in Terraform?
+
+Terraform functions are built-in functions used to manipulate and transform data within Terraform configurations. They help perform operations such as string manipulation, list and map processing, mathematical calculations, file handling, networking calculations, and data formatting. Functions make Terraform code more dynamic, reusable, and easier to maintain. Some commonly used functions include `length()`, `lookup()`, `merge()`, `join()`, `split()`, `cidrsubnet()`, `format()`, and `file()`. In real projects, they're often used to generate resource names, calculate subnet CIDRs, merge tags, read configuration files, and dynamically configure infrastructure.
+
+Suppose we want one subnet in each Availability Zone. Instead of writing three subnet resources manually:
+*   Subnet-A
+*   Subnet-B
+*   Subnet-C
+
+We use `count`.
+
+```hcl
+variable "public_subnets" {
+  default = [
+    "10.0.1.0/24",
+    "10.0.2.0/24",
+    "10.0.3.0/24"
+  ]
+}
+
+resource "aws_subnet" "public" {
+  count       = length(var.public_subnets)
+  cidr_block  = var.public_subnets[count.index]
+}
