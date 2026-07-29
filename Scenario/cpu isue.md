@@ -1,31 +1,21 @@
-"Suppose CPU usage suddenly goes above 90%. How will you troubleshoot it?"
+If I receive a High CPU alert from Prometheus/CloudWatch or any monitoring tool, I won't immediately restart the server. My goal is first to identify what is consuming the CPU and whether it is affecting users."
 
-Interview Answer
+Step 1: Verify the Alert
 
-"The first thing I do is understand the alert before taking any action. High CPU itself is not always a problem; I need to know whether it's affecting the application or users."
+First, I verify the alert in the monitoring dashboard.
 
-Step 1: Understand the Alert
+Questions I ask:
 
-"I'll first open our monitoring tool, such as Prometheus and Grafana or CloudWatch, depending on the environment.
-
-I want to answer a few questions:
-
-Which server or Kubernetes pod has high CPU?
-Is it only one pod or all pods?
-When did the spike start?
+Which server or pod has high CPU?
+Is it one server or all servers?
+When did it start?
 Did it happen after a deployment?
 
-For example, if I see that only one out of four pods is at 95% CPU while the other three are around 20%, I know the issue is isolated to that pod rather than the entire application."
+If it started immediately after deployment, I already suspect the new release.
 
-Why?
+Step 2: Check Current CPU Usage
 
-"This helps me narrow down whether I'm dealing with an application issue, a node issue, or just one unhealthy pod."
-
-Step 2: Verify on the Server
-
-"Next, I'll log in to the server or Kubernetes cluster to confirm what the monitoring tool is showing.
-
-If it's a Linux server, I'll run:
+On Linux I use
 
 top
 
@@ -33,170 +23,264 @@ or
 
 htop
 
-These commands show which process is consuming the CPU.
+This shows
 
-For example, I might see:
+CPU utilization
+Memory usage
+Processes consuming CPU
 
-PID      COMMAND      CPU
+Example
 
-2456     java         280%
-1456     nginx         10%
+PID   USER   %CPU   COMMAND
 
-That immediately tells me the Java application is consuming most of the CPU."
+4210  java    280   java
+1456  nginx    12   nginx
 
-Why?
+Now I know the Java application is consuming CPU.
 
-"Monitoring tells me there is a problem, but these commands tell me exactly which process is causing it."
+Step 3: Identify Which Process
 
-Step 3: Find Out Which Application
+Sometimes there are multiple Java processes.
 
-"If there are multiple Java applications running, I need to identify which one is responsible.
-
-I'll run:
+I run
 
 ps -ef | grep java
 
 or
 
-ps -eo pid,%cpu,%mem,cmd --sort=-%cpu
+ps -eo pid,ppid,%cpu,%mem,cmd --sort=-%cpu
 
-This shows me the command that started the process, so I can identify whether it's my application or another service."
+This tells me
 
-Why?
+PID
+Application name
+CPU usage
 
-"I don't want to restart the wrong application."
+Now I know exactly which application is responsible.
 
-Step 4: Check Whether Users Are Affected
+Step 4: Check if Users are Impacted
 
-"Now I want to understand the business impact.
+Now I verify whether users are actually facing issues.
 
-I'll check Grafana or our Application Load Balancer metrics.
+I check
 
-I'm looking for:
+ALB Target Response Time
+HTTP 5xx errors
+Request count
+Latency
+Grafana dashboards
 
-Increased response time
-HTTP 500 errors
-HTTP 502 or 503 errors
-Increased latency
+If CPU is high but users aren't affected, it may just be temporary traffic.
 
-For example, if CPU is 95% but response time is still around 150 milliseconds and there are no errors, I know users are not currently affected.
+If users are getting
 
-If response time has increased to 5 seconds and users are seeing 503 errors, then this becomes a high-priority production incident."
+Slow responses
+Timeouts
+502/503
 
-Why?
+then it becomes a production incident.
 
-"High CPU without user impact is very different from high CPU causing an outage."
+Step 5: Check Recent Deployments
 
-Step 5: Check Recent Changes
+I verify
 
-"The next thing I check is whether anything changed recently.
+GitLab
 
-I'll verify:
+Jenkins
 
-Jenkins pipeline
-GitLab pipeline
-ArgoCD deployment history
-Kubernetes rollout history
+ArgoCD
 
-Suppose a deployment happened at 10:00 AM and CPU increased at 10:05 AM.
+Deployment history
 
-That strongly suggests the new release introduced the issue."
+Questions:
 
-Why?
+Was a new version deployed?
+Was a feature enabled?
+Any configuration changes?
 
-"In production, many issues are introduced immediately after deployments."
+Many CPU issues start after deployment.
 
-Step 6: Analyze Application Logs
+Step 6: Check Application Logs
 
-"Now I'll check the application logs.
+I check
 
-If it's Kubernetes:
+journalctl -u myapp
 
-kubectl logs <pod-name>
+or
 
-If it's a VM:
+kubectl logs pod-name
 
-journalctl -u myapp -f
+or
 
-I'm looking for:
+/var/log/application.log
 
+I'm looking for
+
+Infinite retries
 Exceptions
-Continuous retries
 Database connection failures
 External API failures
-Infinite loops
-
-For example, I may find something like:
-
-Database connection failed.
-Retrying...
-Database connection failed.
-Retrying...
-
-This tells me the application is continuously retrying failed database calls, which explains the high CPU."
-
+Stack traces
 Step 7: Check Traffic
 
-"Now I want to know whether the application is simply handling more requests than usual.
+Sometimes the application is healthy.
 
-I'll check ALB metrics or Prometheus dashboards.
+The CPU is high simply because traffic increased.
 
-Suppose our application normally receives 200 requests per minute.
+I verify
 
-Today it's receiving 3,000 requests per minute.
+CloudWatch
 
-In that case, high CPU is expected because demand has increased."
+ALB metrics
 
-Why?
+Prometheus
 
-"The application may not have a bug—it may simply need additional capacity."
+Request count
 
-Step 8: Check Database and Other Dependencies
+Example
 
-"If traffic looks normal, I'll investigate dependencies.
+Normal traffic
 
-I'll check:
+200 requests/minute
+
+Current
+
+3000 requests/minute
+
+The high CPU may simply be due to increased traffic.
+
+Step 8: Check Database
+
+Many applications consume CPU while waiting for the database.
+
+I check
+
+Slow queries
+Connection pool
+Database CPU
+Database latency
+
+Example
+
+Application CPU
+95%
 
 Database CPU
-Slow queries
+100%
+
+The application keeps retrying database calls, causing CPU usage to rise.
+
+Step 9: Check External Dependencies
+
+If the application calls
+
 Redis
 Kafka
 Elasticsearch
 Third-party APIs
 
-For example, if the database CPU is already at 100%, every application request waits longer.
+I verify
 
-The application threads remain busy waiting or retrying, causing application CPU to increase as well."
+Response time
+Timeouts
+Connection failures
 
-Step 9: Decide the Correct Action
+Applications often consume CPU while repeatedly retrying failed requests.
 
-"Once I understand the cause, I'll take the appropriate action.
+Step 10: Take Immediate Action
 
-If traffic has increased, I'll scale the application by increasing replicas or Auto Scaling Group capacity.
+Depending on the root cause:
 
-If only one pod is affected, I'll restart that pod because Kubernetes will recreate it.
+If traffic increased
 
-If the issue started immediately after deployment, I'll roll back to the previous stable version.
+Scale horizontally.
 
-If it's an application bug, I'll collect logs, thread dumps, and metrics, then work with the development team on a permanent fix."
+For Kubernetes
 
-Why?
+kubectl get hpa
 
-"I avoid restarting services immediately because that only treats the symptom. I want to identify and fix the actual cause."
+or
 
-Step 10: Confirm the Fix
+kubectl scale deployment myapp --replicas=6
 
-"Finally, after taking corrective action, I'll continue monitoring for some time.
+If using Auto Scaling Groups
 
-I'll verify that:
+Increase desired capacity.
 
-CPU returns to normal
-Response time improves
-Error rate drops
-Users are no longer reporting issues
+If one pod is stuck
 
-Only after confirming that the application is stable do I close the incident."
+Restart only that pod.
 
-Real-Time Example from a Kubernetes Environment
+kubectl delete pod pod-name
 
-"In one production incident, we received a Prometheus alert that one application pod's CPU had crossed 90%. I first confirmed the alert in Grafana and noticed that only one pod was affected while the remaining pods were healthy. Using kubectl top pod, I confirmed the high CPU usage on that pod. I checked the application logs with kubectl logs and found repeated retries due to failures connecting to an external API. The retry loop was keeping the CPU busy. Since user requests were starting to fail with increased latency, I restarted only the affected pod as an immediate mitigation. CPU usage returned to normal, and response times improved. I then collected the logs and shared them with the development team, who fixed the retry logic and released a permanent solution."
+Kubernetes recreates it automatically.
+
+If deployment caused the issue
+
+Rollback.
+
+kubectl rollout undo deployment myapp
+
+or
+
+Rollback via ArgoCD.
+
+If a memory leak or application bug is causing high CPU
+
+Raise the issue to developers with:
+
+Logs
+Thread dump
+CPU graphs
+Time of occurrence
+Step 11: Verify Recovery
+
+After the fix, I monitor
+
+CPU utilization
+Response time
+Error rate
+Request success rate
+User complaints
+
+If CPU returns to normal and users are no longer impacted, I consider the incident resolved.
+
+Commands I Use
+
+Check CPU
+
+top
+
+Detailed process list
+
+ps -eo pid,%cpu,%mem,cmd --sort=-%cpu
+
+Live process monitoring
+
+htop
+
+Application logs
+
+journalctl -u myapp -f
+
+Kubernetes logs
+
+kubectl logs pod-name
+
+Resource usage
+
+kubectl top pod
+kubectl top node
+
+Deployment history
+
+kubectl rollout history deployment myapp
+
+Rollback
+
+kubectl rollout undo deployment myapp
+Real-Time Example (Interview)
+
+"In one of our production environments, we received a Prometheus alert indicating that CPU usage on one of the application pods had exceeded 90%. I first confirmed the alert in Grafana and identified the affected pod. Using kubectl top pod, I verified that only one pod had high CPU while the others were normal. I checked the pod logs with kubectl logs and found repeated retries due to failures connecting to an external API. This retry loop was driving CPU usage. As an immediate mitigation, I restarted the affected pod, which restored normal CPU levels. I then shared the logs and findings with the development team, who fixed the retry logic in a subsequent release."
+
+This answer demonstrates a logical production troubleshooting process: confirm the alert, identify the affected process, determine user impact, investigate recent changes and dependencies, mitigate the issue, and verify recovery. That's the kind of structured thinking interviewers expect from a DevOps engineer.
