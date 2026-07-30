@@ -99,7 +99,7 @@ resource "aws_security_group" "web" {
 ### With Dynamic Blocks
 By using a dynamic block, you can pass an array of values (like ports) and automatically iterate over them, drastically shortening your configuration and making it easier to maintain:
 
-```hcl
+
 variable "ports" {
   default = [80, 443]
 }
@@ -118,6 +118,30 @@ resource "aws_security_group" "web" {
     }
   }
 }
-```
+
 
 > **Senior Signal:** Overusing dynamic blocks can make your configuration complex and difficult to read. They are best reserved for clean module abstractions—such as dynamic security group rule tables, network ACLs, or complex block stores—where user inputs vary dynamically. Additionally, remember that you can customize the iterator name by adding `iterator = name` inside the block if you want to avoid defaulting to the block label itself.
+
+
+## 8 What is teeraform state file?
+# Understanding the Terraform State File
+
+A **Terraform state file** is a JSON file that Terraform uses to keep track of all the infrastructure it manages. It acts as the source of truth for Terraform by maintaining a mapping between the resources defined in the Terraform code and the actual resources created in the cloud.
+
+For example, if I create an EC2 instance using Terraform, AWS assigns it an instance ID like `i-0abc123`. Terraform stores that instance ID, along with other attributes such as the ARN, IP address, and metadata, in the state file. During the next `terraform plan` or `terraform apply`, Terraform reads this state file and compares it with my current Terraform configuration and the actual infrastructure to determine what needs to be created, updated, or destroyed.
+
+## Remote Backend and State Locking
+
+In our projects, we never store the state file locally because multiple engineers work on the same infrastructure. We use a remote backend by storing the state file in an **S3 bucket** and enable **state locking** to prevent two people from making changes at the same time. This avoids state corruption and keeps the infrastructure consistent.
+
+## Common State Commands
+
+I've also used state-related commands such as:
+* `terraform state list`: To view managed resources.
+* `terraform state show`: To inspect resource details.
+* `terraform import`: To bring existing resources under Terraform management.
+* `terraform state rm`: When removing a resource from Terraform management without deleting it from the cloud.
+
+## Maintenance Rule
+
+One important point is that we never manually edit the state file because it can cause Terraform to lose track of resources, which may result in duplicate resource creation or unintended infrastructure changes.
