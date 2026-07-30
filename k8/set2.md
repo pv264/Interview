@@ -86,7 +86,7 @@ Getting the configuration wrong on these probes can lead to severe operational i
 In our project, our Spring Boot microservices connect to PostgreSQL, Redis, and Temporal during startup, so the application takes some time before it's fully operational. We use a Startup Probe to give the application enough time to initialize and prevent Kubernetes from restarting it too early. Once startup is complete, the Readiness Probe checks whether the service can handle requests. For example, if PostgreSQL becomes temporarily unavailable, the readiness check fails and Kubernetes removes that Pod from the Service so it stops receiving traffic, but it doesn't restart the application because it can recover once the database is back. Finally, we use a Liveness Probe to detect situations where the application becomes unresponsive due to issues like a deadlock or an infinite loop. In that case, Kubernetes automatically restarts the container to restore the service.
 
 
-# How does Kubernetes handle rolling updates and rollbacks for a Deployment? What's maxSurge and maxUnavailable?
+## How does Kubernetes handle rolling updates and rollbacks for a Deployment? What's maxSurge and maxUnavailable?
 
 Kubernetes Deployments support rolling updates, which means the application is updated gradually instead of stopping all existing Pods at once. During a rolling update, Kubernetes creates new Pods with the updated version while keeping some of the old Pods running. Once the new Pods become healthy and pass their readiness checks, traffic is shifted to them, and the old Pods are terminated. This ensures that the application remains available throughout the deployment with little or no downtime.
 
