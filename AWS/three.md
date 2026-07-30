@@ -61,3 +61,15 @@ In the policy, I specify:
 This ensures that only that designated user can access that object, regardless of the baseline permissions other users or roles might have.
 
 > **Senior Signal:** To make this implementation absolutely bulletproof, mention that you would use an **Explicit Deny** statement combined with a **`NotPrincipal`** element in the bucket policy. Because AWS always evaluates an explicit `Deny` over any `Allow` permissions, this approach guarantees that absolutely no one else—not even an AWS Administrator with `s3:*` privileges—can access that specific object.
+
+## 3 what is your experience working with Lambda
+# Infrastructure Automation: Automatically Stopping EC2 Instances
+
+I have worked on AWS Lambda for infrastructure automation. One of the tasks I implemented was automatically stopping EC2 instances to reduce costs when they were not required.
+
+## Implementation Details
+
+* **Lambda & IAM Role:** We created a Lambda function in Python and assigned it an IAM execution role with permissions such as `ec2:StopInstances` and CloudWatch Logs permissions.
+* **Trigger:** The Lambda function was triggered on a schedule using Amazon EventBridge. At the scheduled time, EventBridge invoked the Lambda function.
+* **Execution (Boto3):** The function used the AWS SDK (Boto3) to identify the target EC2 instances—either by specific instance IDs or by tags like `Environment=Dev`—and then called the `StopInstances` API.
+* **Logging:** After stopping the instances, the function wrote logs to CloudWatch so we could verify that the execution completed successfully.
