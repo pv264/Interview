@@ -61,4 +61,27 @@ If a Pod is Running but the application isn't reachable through the Service, my 
 kubectl get pods
 
 
-If a Pod is Running but the application isn't reachable through the Service, my first step is to verify whether the Pod is actually Ready by checking kubectl get pods. A Running Pod with 0/1 READY won't receive traffic because the readiness probe hasn't passed. If the Pod is Ready, I inspect the Service using <b>kubectl describe svc<b> to verify its selector, port, and targetPort. Then I check the Endpoints with kubectl get endpoints, because if the Endpoints list is empty, it usually means the Service selector doesn't match the Pod labels or the Pods aren't Ready. If Endpoints are present, I verify that the application's listening port matches the Service's targetPort, review the application logs, and test connectivity from another Pod. If everything looks correct, I investigate NetworkPolicies or, for external traffic, the Ingress and ALB configuration. In our EKS environment, I've seen issues where the Service selector didn't match the Deployment labels after a release, resulting in no Endpoints. Correcting the labels immediately restored traffic without restarting the application.
+If a Pod is Running but the application isn't reachable through the Service, my first step is to verify whether the Pod is actually Ready by checking <b>kubectl get pods.</b> A Running Pod with 0/1 READY won't receive traffic because the readiness probe hasn't passed. If the Pod is Ready, I inspect the Service using <b>kubectl describe svc</b> to verify its selector, port, and targetPort. Then I check the Endpoints with <b>kubectl get endpoints,</b> because if the Endpoints list is empty, it usually means the Service selector doesn't match the Pod labels or the Pods aren't Ready. If Endpoints are present, I verify that the application's listening port matches the Service's targetPort, review the application logs, and test connectivity from another Pod. If everything looks correct, I investigate NetworkPolicies or, for external traffic, the Ingress and ALB configuration. In our EKS environment, I've seen issues where the Service selector didn't match the Deployment labels after a release, resulting in no Endpoints. Correcting the labels immediately restored traffic without restarting the application.
+
+
+
+
+kubectl get pods
+
+kubectl describe pod
+
+kubectl get svc
+
+kubectl describe svc
+
+kubectl get endpoints
+
+kubectl get pods --show-labels
+
+kubectl logs
+
+kubectl run debug --rm -it --image=busybox -- sh
+
+kubectl get networkpolicy
+
+kubectl get ingress
