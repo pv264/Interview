@@ -177,3 +177,26 @@ This approach follows the **principle of least privilege** because Jenkins recei
 In Kubernetes, service discovery is handled by **CoreDNS**. Whenever a **Service** is created, Kubernetes automatically assigns it a DNS name. Applications communicate using this Service name instead of Pod IP addresses because Pod IPs are temporary and can change when Pods are recreated.
 
 When a Pod makes a request to another service, such as `http://user-service`, the request first goes to **CoreDNS**. CoreDNS looks up the Service information from the Kubernetes API and returns the Service's **ClusterIP**. The application then sends the request to that ClusterIP, and the Kubernetes Service forwards the request to one of the healthy backend Pods using **kube-proxy**. This allows applications to communicate reliably even when Pods are restarted, replaced, or scaled.
+
+
+
+## What are taints and tolerations?
+
+
+
+Taints and tolerations are used to control which Pods can be scheduled onto specific worker nodes. 
+
+* **Taint:** Applied to a node and tells the Kubernetes Scheduler not to place Pods on that node unless they explicitly tolerate the taint. 
+* **Toleration:** Added to a Pod and allows it to be scheduled onto nodes with the matching taint.
+
+## Production Use Case: Dedicated GPU Nodes
+
+A very common production use case for taints and tolerations is GPU nodes. GPU instances are significantly more expensive than CPU instances, so we don't want regular application Pods using them. 
+
+In one of my projects, we had Spring Boot APIs running on CPU nodes and vLLM inference servers running on NVIDIA GPU instances. Here is how we configured it:
+
+* **Tainting the Node:** We labeled the GPU nodes, for example `accelerator=nvidia`, and applied a taint such as `gpu=true:NoSchedule`. This prevented normal application Pods from being scheduled on GPU nodes. 
+* **Tolerating the Taint:** In the vLLM Deployment, we added a matching toleration along with a node selector targeting the GPU label. 
+
+The node selector directed the vLLM Pods to GPU nodes, while the toleration allowed them to bypass the taint. This ensured that only AI inference workloads consumed GPU resources, reducing infrastructure costs and keeping the GPU nodes available for workloads that actually required them.
+
