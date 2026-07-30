@@ -119,7 +119,7 @@ CPU and memory limits are enforced differently:
 An **Ingress** addresses this by allowing multiple Services to be accessed through a single external LoadBalancer.[cite: 1] However, it's important to understand that an Ingress itself doesn't handle any network traffic.[cite: 1] It's simply a set of routing rules.[cite: 1] The actual traffic management is performed by an **Ingress Controller**, such as NGINX Ingress Controller, Traefik, or HAProxy.[cite: 1] The Ingress Controller continuously watches for Ingress resources and automatically configures the underlying reverse proxy to route incoming requests to the appropriate Kubernetes Service.[cite: 1]
 
 
-# PersistentVolume (PV) vs. PersistentVolumeClaim (PVC) vs. StorageClass
+# What is a PersistentVolume (PV) vs a PersistentVolumeClaim (PVC) vs a StorageClass?
 
 A PersistentVolume (PV), PersistentVolumeClaim (PVC), and StorageClass work together to provide persistent storage to applications running in Kubernetes.
 
@@ -128,3 +128,52 @@ A PersistentVolume (PV), PersistentVolumeClaim (PVC), and StorageClass work toge
 * **StorageClass:** Defines the type of storage to provision, such as `gp3` on AWS, along with properties like performance and reclaim policy.
 
 This setup allows applications to request storage without needing to know the underlying infrastructure details.
+
+
+# What is a NetworkPolicy, and how would you restrict traffic between namespaces or services?
+
+A **NetworkPolicy** is a Kubernetes resource that controls which Pods are allowed to communicate with each other. By default, most Kubernetes clusters allow all Pods to communicate freely, which isn't ideal from a security perspective. 
+
+A NetworkPolicy lets you define exactly which Pods can send or receive traffic based on:
+* Pod labels
+* Namespaces
+* Ports
+* IP ranges
+
+This helps implement the principle of least privilege, where each application can communicate only with the services it actually needs.
+
+## Example: Restricting Traffic Between Microservices
+
+In our project, we have Spring Boot microservices such as the UI Service, Document Processing Service, User Service, and a PostgreSQL database. 
+
+* The **UI Service** should communicate with the **Document Processing Service**.
+* The **Document Processing Service** should communicate with **PostgreSQL**.
+* The **UI Service** should *never* connect directly to the PostgreSQL database.
+
+We can enforce this using a NetworkPolicy by allowing only the Document Processing Pods to access PostgreSQL on port `5432`, while blocking all other Pods from reaching the database.
+
+
+
+
+## What's the difference between a ServiceAccount and a User in Kubernetes RBAC? How would you scope permissions for a CI/CD pipeline deploying to the cluster?
+
+In our CI/CD pipeline, Jenkins needs to communicate with the Kubernetes API to deploy applications.[cite: 1] Instead of using a personal user account or granting cluster-admin permissions, I would create a dedicated ServiceAccount for Jenkins.[cite: 1] By default, a ServiceAccount has no permissions, so the first step is to create a ServiceAccount in the namespace where Jenkins will deploy the application, for example, `jenkins-deployer` in the `dev` namespace.[cite: 1]
+
+Next, I would create a namespace-scoped **Role** that grants only the permissions Jenkins actually needs, such as `get`, `list`, `create`, `update`, and `patch` on resources like `Deployments`, `Services`, `ConfigMaps`, and `Pods`.[cite: 1] After creating the Role, I would create a **RoleBinding** to bind that Role to the `jenkins-deployer` ServiceAccount.[cite: 1] This gives the ServiceAccount only the required permissions within that namespace.[cite: 1]
+
+The next step is to configure Jenkins to use this ServiceAccount.[cite: 1] In a typical setup, I would generate a token for the ServiceAccount (or use the recommended authentication method for the Kubernetes version in use), securely store the token and the cluster details in Jenkins Credentials, and configure either the Kubernetes plugin or the `kubeconfig` used by the pipeline to authenticate with those credentials.[cite: 1]
+
+Now, whenever the Jenkins pipeline executes commands such as `kubectl apply -f deployment.yaml` or `kubectl rollout status deployment/my-app`, the Kubernetes API authenticates the request as the `jenkins-deployer` ServiceAccount.[cite: 1] Kubernetes RBAC then checks whether that ServiceAccount has permission to perform the requested operation.[cite: 1] If the permission exists, the deployment succeeds; otherwise, the API returns a `Forbidden` error.[cite: 1]
+
+This approach follows the **principle of least privilege** because Jenkins receives only the permissions required for deployment instead of full cluster-admin access.[cite: 1] It also improves security and auditability, since all deployment actions are performed by a dedicated ServiceAccount rather than a personal user account.[cite: 1]
+
+
+
+ ## How does DNS resolution work inside a cluster (CoreDNS, service discovery by name)?
+
+
+ # Kubernetes Service Discovery with CoreDNS
+
+In Kubernetes, service discovery is handled by **CoreDNS**. Whenever a **Service** is created, Kubernetes automatically assigns it a DNS name. Applications communicate using this Service name instead of Pod IP addresses because Pod IPs are temporary and can change when Pods are recreated.
+
+When a Pod makes a request to another service, such as `http://user-service`, the request first goes to **CoreDNS**. CoreDNS looks up the Service information from the Kubernetes API and returns the Service's **ClusterIP**. The application then sends the request to that ClusterIP, and the Kubernetes Service forwards the request to one of the healthy backend Pods using **kube-proxy**. This allows applications to communicate reliably even when Pods are restarted, replaced, or scaled.
