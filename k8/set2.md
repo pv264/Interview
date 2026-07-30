@@ -101,4 +101,30 @@ An **Ingress** is a Kubernetes resource that manages how external HTTP and HTTPS
 
 A **Service of type LoadBalancer**, on the other hand, exposes only one Service to the internet by provisioning a cloud load balancer.[cite: 1] If you have several applications, creating a separate LoadBalancer Service for each one means multiple cloud load balancers, which increases both cost and operational overhead.[cite: 1]
 
+
+# Kubernetes Resource Requests vs. Limits
+
+In Kubernetes, resource requests and limits are used to manage CPU and memory for containers. 
+
+* **Request:** Specifies the minimum amount of CPU or memory that a container needs, and Kubernetes uses this information when deciding which worker node should run the Pod. 
+* **Limit:** Defines the maximum amount of CPU or memory that the container is allowed to use.
+
+## What happens when limits are exceeded?
+
+CPU and memory limits are enforced differently:
+
+* **CPU:** If a container exceeds its CPU limit, Kubernetes doesn't terminate it. Instead, the Linux kernel throttles the container, meaning it gets less CPU time and the application may become slower. 
+* **Memory:** If a container exceeds its memory limit, it cannot be throttled because memory can't be reclaimed in the same way. Instead, the container is terminated with an Out Of Memory (OOM) kill, and Kubernetes restarts it according to the Pod's restart policy.
+
 An **Ingress** addresses this by allowing multiple Services to be accessed through a single external LoadBalancer.[cite: 1] However, it's important to understand that an Ingress itself doesn't handle any network traffic.[cite: 1] It's simply a set of routing rules.[cite: 1] The actual traffic management is performed by an **Ingress Controller**, such as NGINX Ingress Controller, Traefik, or HAProxy.[cite: 1] The Ingress Controller continuously watches for Ingress resources and automatically configures the underlying reverse proxy to route incoming requests to the appropriate Kubernetes Service.[cite: 1]
+
+
+# PersistentVolume (PV) vs. PersistentVolumeClaim (PVC) vs. StorageClass
+
+A PersistentVolume (PV), PersistentVolumeClaim (PVC), and StorageClass work together to provide persistent storage to applications running in Kubernetes.
+
+* **PersistentVolume (PV):** Represents the actual storage resource, such as an AWS EBS volume, Azure Disk, or NFS share.
+* **PersistentVolumeClaim (PVC):** A request made by a Pod for storage with specific requirements like size and access mode. Kubernetes matches the PVC with an available PersistentVolume or dynamically creates one using a StorageClass.
+* **StorageClass:** Defines the type of storage to provision, such as `gp3` on AWS, along with properties like performance and reclaim policy.
+
+This setup allows applications to request storage without needing to know the underlying infrastructure details.
