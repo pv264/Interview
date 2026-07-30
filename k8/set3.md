@@ -80,3 +80,25 @@ If I were using **Kustomize** instead, I would maintain a common base configurat
 ## Conclusion
 
 Both approaches reduce duplication, but in our environment **Helm** is the better fit because we already use Helm charts with ArgoCD and benefit from templating, release management, and easy upgrades.
+
+
+ # What's your approach to Horizontal Pod Autoscaling (HPA) — what metrics would you scale on for a typical microservice?
+
+
+ # Horizontal Pod Autoscaling (HPA) Strategy
+
+My approach to Horizontal Pod Autoscaling (HPA) depends on the workload rather than always using CPU. HPA automatically adjusts the number of Pods based on observed metrics, but the right metric should reflect the application's bottleneck. 
+
+## Scaling a Typical Microservice
+
+For a typical stateless Spring Boot microservice, **CPU utilization** is a good starting point because CPU usage generally increases as request volume grows. I would configure:
+* A minimum of two replicas for high availability
+* A reasonable maximum based on cluster capacity
+* A CPU target around 70%
+
+## Beyond CPU: Identifying Workload-Specific Bottlenecks
+
+I don't assume CPU is always the best metric. The key is to choose a metric that represents the workload's true bottleneck rather than using CPU by default:
+
+* **Request Rate:** In one of our AI workloads, requests spent significant time waiting for Milvus searches and vLLM inference, so CPU stayed relatively low even though user response times increased. In that case, scaling based on request rate—such as ALB `RequestCountPerTarget`—was much more effective because it reflected actual user demand.
+* **Alternative Metrics:** For other workloads, I might scale on memory, queue depth, or custom Prometheus metrics such as request latency, depending on what truly limits the application's performance.
