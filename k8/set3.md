@@ -54,8 +54,29 @@ Compared to using raw `kubectl apply` manifests, Helm makes deployments much eas
 Ultimately, Helm makes deployments more consistent, scalable, and easier to maintain in production environments.
 
 # How would you design a multi-environment (dev/staging/prod) deployment strategy using Kustomize or Helm value overrides?
-For a multi-environment deployment strategy, I prefer using a single reusable Helm chart with separate values files for each environment, such as values-dev.yaml, values-sit.yaml, values-uat.yaml, and values-prod.yaml. The Helm templates remain the same across all environments, while the values files contain environment-specific settings like replica count, image tag, resource limits, ingress hostname, and autoscaling configuration. This avoids maintaining separate Kubernetes manifests for each environment.
 
-In our EKS environment, Jenkins builds the Docker image, pushes it to AWS ECR, and updates the image tag in the appropriate Helm values file. ArgoCD watches the Git repository, detects the change, renders the Helm chart with the corresponding values file, and deploys it to the correct Kubernetes cluster or namespace. As the application moves from development to production, we reuse the same chart and only change the environment-specific values, ensuring consistency across deployments while allowing each environment to have its own configuration.
 
-If I were using Kustomize instead, I would maintain a common base configuration and create separate overlays for development, staging, and production. Each overlay would patch only the differences, such as replica count, image tag, or ingress hostname. Both approaches reduce duplication, but in our environment Helm is the better fit because we already use Helm charts with ArgoCD and benefit from templating, release management, and easy upgrades.
+# Multi-Environment Deployment Strategy: Helm vs. Kustomize
+
+For a multi-environment deployment strategy, I prefer using a single reusable Helm chart with separate values files for each environment, such as `values-dev.yaml`, `values-sit.yaml`, `values-uat.yaml`, and `values-prod.yaml`. The Helm templates remain the same across all environments, while the values files contain environment-specific settings like:
+* Replica count
+* Image tag
+* Resource limits
+* Ingress hostname
+* Autoscaling configuration
+
+This avoids maintaining separate Kubernetes manifests for each environment.
+
+## CI/CD Workflow in EKS
+
+In our EKS environment, **Jenkins** builds the Docker image, pushes it to **AWS ECR**, and updates the image tag in the appropriate Helm values file. 
+
+**ArgoCD** watches the Git repository, detects the change, renders the Helm chart with the corresponding values file, and deploys it to the correct Kubernetes cluster or namespace. As the application moves from development to production, we reuse the same chart and only change the environment-specific values, ensuring consistency across deployments while allowing each environment to have its own configuration.
+
+## Alternative Approach: Kustomize
+
+If I were using **Kustomize** instead, I would maintain a common base configuration and create separate overlays for development, staging, and production. Each overlay would patch only the differences, such as replica count, image tag, or ingress hostname. 
+
+## Conclusion
+
+Both approaches reduce duplication, but in our environment **Helm** is the better fit because we already use Helm charts with ArgoCD and benefit from templating, release management, and easy upgrades.
