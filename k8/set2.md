@@ -93,3 +93,12 @@ Kubernetes Deployments support rolling updates, which means the application is u
 If the new version has an issue, Kubernetes also supports rollbacks. A rollback restores the Deployment to the previous ReplicaSet, bringing back the last stable version of the application. This can be triggered manually using `kubectl rollout undo deployment <deployment-name>` or through automation in a CI/CD pipeline.
 
 The rolling update behavior is controlled by two important parameters: **maxSurge** and **maxUnavailable**. maxSurge defines how many extra Pods Kubernetes can create above the desired replica count during an update, while maxUnavailable defines how many existing Pods are allowed to be unavailable during the update. These settings help balance deployment speed and application availability.
+
+
+# Kubernetes Ingress vs. LoadBalancer Service[cite: 1]
+
+An **Ingress** is a Kubernetes resource that manages how external HTTP and HTTPS traffic is routed to applications running inside the cluster.[cite: 1] Instead of exposing each application separately, an Ingress lets multiple applications share a single external endpoint.[cite: 1] It routes incoming requests to the correct Service based on rules such as the URL path (for example, `/api` or `/admin`) or the hostname (for example, `api.company.com` or `admin.company.com`).[cite: 1]
+
+A **Service of type LoadBalancer**, on the other hand, exposes only one Service to the internet by provisioning a cloud load balancer.[cite: 1] If you have several applications, creating a separate LoadBalancer Service for each one means multiple cloud load balancers, which increases both cost and operational overhead.[cite: 1]
+
+An **Ingress** addresses this by allowing multiple Services to be accessed through a single external LoadBalancer.[cite: 1] However, it's important to understand that an Ingress itself doesn't handle any network traffic.[cite: 1] It's simply a set of routing rules.[cite: 1] The actual traffic management is performed by an **Ingress Controller**, such as NGINX Ingress Controller, Traefik, or HAProxy.[cite: 1] The Ingress Controller continuously watches for Ingress resources and automatically configures the underlying reverse proxy to route incoming requests to the appropriate Kubernetes Service.[cite: 1]
