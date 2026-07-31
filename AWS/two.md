@@ -86,8 +86,4 @@ Using an ALB provides significant architectural benefits:
 
 ## Why Alias instead of CNAME?
 
-For AWS resources like an ALB, Route 53 specifically recommends using an **Alias A record** rather than a standard CNAME record for three key reasons:
-
-1. **Root Domain Support:** Unlike a CNAME, an Alias record can be used for the root domain (the zone apex, such as `example.com`).
-2. **Cost Efficiency:** There is no additional Route 53 query charge for Alias lookups routed to AWS resources.
-3. **Automatic Tracking:** It automatically tracks and resolves any underlying IP address changes to the ALB.
+For AWS resources like an Application Load Balancer, we use an Alias A record because it can point both the root domain (example.com) and subdomains to the ALB. The ALB's IP addresses can change over time, but the Alias record automatically follows those changes. That means we don't have to update DNS whenever the ALB's underlying IP addresses change."
