@@ -65,3 +65,22 @@ The **Application Load Balancer (ALB)** is the actual AWS resource that receives
 * **ALB** handles the actual traffic.
 
 > **Senior Signal:** Being able to clearly separate the logical definition (Ingress) from the physical implementation (ALB) shows a strong grasp of Kubernetes architecture. Mentioning the **AWS Load Balancer Controller** specifically highlights your practical, real-world experience with EKS, as it bridges the gap between Kubernetes-native YAML configurations and actual AWS cloud infrastructure.
+
+
+# DNS Management with AWS Route 53 and ALB
+
+In **Route 53**, the first step is to create or use an existing hosted zone for the domain. Once the hosted zone is ready, you can create an **A record** to map the domain or subdomain to the application's endpoint. 
+
+For example, a subdomain like `app.example.com` can be mapped directly to an **EC2 instance's** public IP address (e.g., `18.220.15.100`).
+
+## The Problem with Direct Mapping
+In a production environment, I avoid pointing DNS directly to an EC2 instance. If the instance is stopped, terminated, or replaced, its public IP address can change, which would break the DNS routing and cause downtime.
+
+## Production Best Practice: Alias Records and ALBs
+Instead of pointing to a specific IP, the best practice is to create an **Alias A record** in Route 53 that points to an **Application Load Balancer (ALB)**. 
+
+Using an ALB provides several key advantages:
+* **Stable Endpoint:** The ALB has a stable DNS name, eliminating concerns about changing backend IP addresses.
+* **Traffic Distribution:** It efficiently distributes incoming traffic across multiple EC2 instances.
+* **High Availability & Scalability:** It ensures the application remains highly available and can scale based on demand.
+* **Seamless Updates:** Backend instances can be added, removed, or replaced without requiring any updates to the DNS configuration.
