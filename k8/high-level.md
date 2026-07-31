@@ -137,8 +137,88 @@ The Scheduler evaluates every worker node in the cluster and eliminates the ones
 ## Step 2: Scoring (Which node is the best fit?)
 If multiple nodes successfully pass the filtering stage, the Scheduler assigns a score to each remaining node based on standard scheduling policies. It scores nodes higher if they:
 
-* **Optimize Resources:** Have sufficient free CPU and memory to easily handle the workload without hitting capacity ceilings.
+* **Optimize Resources:** Have sufficient free CPU and memory to easily handle the workload without hitting capacity 
+ceilings.
 * **Balance Workloads:** Effectively distribute workloads evenly across the cluster to avoid hot-spotting individual nodes.
 * **Satisfy Topology Constraints:** Adhere to topology spread constraints to distribute Pods across different availability zones or racks for maximum fault tolerance.
 
 **Final Action:** The node that scores the highest wins the selection. The Scheduler then updates the Pod specification with the selected node name and commits it back to the API Server.
+
+
+# Explain kube-proxy in detail.
+
+**kube-proxy** is a critical network component that runs on every worker node in a Kubernetes cluster. Its primary responsibility is to maintain network rules on nodes, enabling seamless communication between Services and Pods.
+
+In Kubernetes, Pods are highly ephemeral and temporary. A Pod can crash, scale down, or be recreated with a completely new IP address. If client applications communicated directly with Pod IPs, every Pod restart would break the connection. To solve this, Kubernetes uses **Services**, which provide a stable, permanent virtual IP (ClusterIP). `kube-proxy` is the engine that makes this Service IP work under the hood by intercepting and forwarding traffic to the correct backend Pods.
+
+## How kube-proxy Works (The Mechanics)
+
+`kube-proxy` operates as a control-plane watcher on the local worker nodes:
+
+1. **Watches the API Server:** It continuously monitors the Kubernetes API Server for any additions, modifications, or deletions of **Service** and **Endpoints** (or `EndpointSlice`) objects.
+2. **Updates Local Network Rules:** When a Service or Endpoint changes (e.g., a new Pod is added to a Deployment), `kube-proxy` intercepts the change and updates the internal routing rules directly on its host worker node.
+3. **Traffic Interception:** When traffic hits the node bound for a Service's virtual ClusterIP, the node's native routing mechanisms (configured by `kube-proxy`) rewrite the destination IP to a valid, healthy backend Pod IP instead.
+
+## Modes of Operation
+
+`kube-proxy` can configure node routing using different underlying networking modes. The two most common in production environments are:
+
+### 1. iptables Mode (Default)
+In this mode, `kube-proxy` writes standard Linux **iptables** rules into the node's netfilter subsystem.
+* **Traffic Routing:** When traffic targets a Service IP, iptables randomly selects a healthy backend Pod from the Endpoints list using a sequential rule check and executes a Destination Network Address Translation (DNAT).
+* **Limitations:** iptables checks rules sequentially. If a cluster grows to thousands of Services and Pods, the massive list of sequential routing rules causes performance degradation and higher CPU consumption on the nodes.
+
+### 2. IPVS Mode (IP Virtual Server)
+Designed specifically for large-scale production environments and clusters containing thousands of services.
+* **Traffic Routing:** IPVS is built directly into the Linux kernel and uses hash tables rather than sequential lists. This provides $O(1)$ lookup times regardless of cluster size.
+* **Advantages:** It supports more advanced load-balancing algorithms (e.g., least connection, shortest expected delay, round-robin) and handles high-throughput traffic with significantly lower latency and overhead compared to iptables.
+
+### 3. Userspace Mode (Legacy)
+An older, obsolete mode where `kube-proxy` acted as an actual proxy server in the userspace, routing traffic back and forth across the kernel/userspace boundary. This added extreme latency and context-switching overhead, and is no longer used in modern clusters.
+
+
+# Understanding CoreDNS in Kubernetes
+
+**CoreDNS** is the DNS server used inside a Kubernetes cluster. Its main responsibility is to provide **service discovery**. Instead of applications communicating using IP addresses, they communicate using DNS names.
+
+## The Problem: Ephemeral Pod IPs
+This is important because Pod IP addresses are temporary. Whenever a Pod is deleted and recreated, it gets a completely new IP address. 
+
+For example:
+* **Today:** `payment-pod` is at `10.244.1.20`
+* **Tomorrow (after restart):** `payment-pod` is at `10.244.2.20`
+
+Because the IP constantly changes, if every application relied directly on Pod IPs, the application network would constantly break.
+
+## The Solution: Services and DNS
+To solve this, Kubernetes uses **Services**, which are assigned stable, permanent DNS names. 
+* Applications communicate using this stable DNS name instead of the ephemeral Pod IP.
+* **CoreDNS** acts as the translator, resolving this DNS name to the correct Service IP.
+
+## How CoreDNS Automates Service Discovery
+CoreDNS continuously watches the Kubernetes **API Server** to keep its routing information accurate:
+
+1. **Service Creation:** Whenever a new Service is created, the API Server stores its desired state in `etcd`.
+2. **Automatic Updates:** CoreDNS detects this change through the API Server and updates its internal DNS records automatically. 
+3. **Seamless Discovery:** Whenever a Service is added, deleted, or modified, CoreDNS updates its records without requiring any manual configuration.
+
+
+# Container Network Interface (CNI) and Pod Networking
+
+**CNI** stands for **Container Network Interface**. It is a standard interface that allows Kubernetes to configure networking for Pods. 
+
+One important thing to understand is that Kubernetes itself does not implement networking. Kubernetes only defines *how* networking should work. The actual implementation is handled by a CNI plugin.
+
+## Popular CNI Plugins
+
+There are several widely used CNI plugins, depending on the environment and requirements:
+* **Calico**
+* **Cilium**
+* **Flannel**
+* **Weave Net**
+* **AWS VPC CNI** (used in Amazon EKS)
+* **Azure CNI** (used in Microsoft AKS)
+
+## How It Works
+
+When a new Pod is created, Kubernetes does not assign the IP address or set up the network routes itself. Instead, it delegates this task. Kubernetes asks the configured CNI plugin to configure the networking for that specific Pod, ensuring it gets a valid IP address and can communicate with other Pods across the cluster.
