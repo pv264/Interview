@@ -69,18 +69,25 @@ The **Application Load Balancer (ALB)** is the actual AWS resource that receives
 
 # DNS Management with AWS Route 53 and ALB
 
-In **Route 53**, the first step is to create or use an existing hosted zone for the domain. Once the hosted zone is ready, you can create an **A record** to map the domain or subdomain to the application's endpoint. 
+# Managing DNS with Amazon Route 53
 
-For example, a subdomain like `app.example.com` can be mapped directly to an **EC2 instance's** public IP address (e.g., `18.220.15.100`).
+In my projects, we use **Amazon Route 53** to manage DNS for our applications. The process begins by creating a hosted zone for the domain. The subsequent DNS configuration depends on the architecture:
 
-## The Problem with Direct Mapping
-In a production environment, I avoid pointing DNS directly to an EC2 instance. If the instance is stopped, terminated, or replaced, its public IP address can change, which would break the DNS routing and cause downtime.
+## Basic vs. Production Setup
 
-## Production Best Practice: Alias Records and ALBs
-Instead of pointing to a specific IP, the best practice is to create an **Alias A record** in Route 53 that points to an **Application Load Balancer (ALB)**. 
+* **Simple Setup:** We can create a standard **A record** that maps the domain or subdomain directly to an EC2 instance's public IP address (e.g., `app.example.com` pointing to `18.220.15.100`).
+* **Production Best Practice:** We generally avoid pointing DNS directly to an EC2 instance because its public IP can change if the instance is terminated or replaced. Instead, we place an **Application Load Balancer (ALB)** in front of the application and create an **Alias A record** in Route 53 that points to the ALB's DNS name. 
 
-Using an ALB provides several key advantages:
-* **Stable Endpoint:** The ALB has a stable DNS name, eliminating concerns about changing backend IP addresses.
-* **Traffic Distribution:** It efficiently distributes incoming traffic across multiple EC2 instances.
-* **High Availability & Scalability:** It ensures the application remains highly available and can scale based on demand.
-* **Seamless Updates:** Backend instances can be added, removed, or replaced without requiring any updates to the DNS configuration.
+Using an ALB provides significant architectural benefits:
+* Efficiently distributes incoming traffic across multiple EC2 instances.
+* Provides high availability.
+* Supports Auto Scaling.
+* Allows adding or replacing backend instances without requiring any DNS record updates.
+
+## Why Alias instead of CNAME?
+
+For AWS resources like an ALB, Route 53 specifically recommends using an **Alias A record** rather than a standard CNAME record for three key reasons:
+
+1. **Root Domain Support:** Unlike a CNAME, an Alias record can be used for the root domain (the zone apex, such as `example.com`).
+2. **Cost Efficiency:** There is no additional Route 53 query charge for Alias lookups routed to AWS resources.
+3. **Automatic Tracking:** It automatically tracks and resolves any underlying IP address changes to the ALB.
