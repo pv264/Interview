@@ -136,6 +136,23 @@ A Pod can be in a `Running` state but not actually be ready to serve traffic.
   kubectl get pods
   kubectl describe pod <pod-name>
 
+
+  If the endpoint list is empty or flickering, that's the smoking gun — traffic is being sent to nowhere, hence 502.
+
+Third, I look at the Ingress or Load Balancer layer, since that's usually where 502/503 actually gets generated — not from the pod, but from whatever's in front of it. If it's an ALB Ingress Controller, I check the target group health in AWS directly, and check ALB access logs for the actual error codes and target response times. A 502 here usually means the target closed the connection or timed out; a 503 usually means no healthy targets were available at that moment.
+
+Fourth, I think about what changed in the deployment. Since this started right after a new deployment, I'd check:
+
+Did the rollout use a rolling update, and were old pods terminated before new ones were fully ready? That causes a brief gap where there aren't enough healthy endpoints.
+Did the app change its port, health check path, or startup time, without the readiness probe or ingress config being updated to match?
+Is there a graceful shutdown problem — old pods getting SIGTERM but still receiving traffic for a few seconds before they finish in-flight requests, causing dropped connections during termination?
+
+Fifth, I check for resource limits I might be missing — not CPU/memory usage, but things like connection limits, thread pool exhaustion, or the app hitting max connections to a database and returning errors under load, even though the pod itself looks 'healthy' from Kubernetes' point of view.
+
+Sixth, I check timing correlation — are the 502s constant, or do they spike specifically during pod restarts, scale-up/down events, or a specific time window? That tells me if it's a steady-state config issue or a rollout/scaling timing issue.
+
+So basically — since the pod itself isn't the problem, I move outward: readiness and endpoints first, then ingress/load balancer, then what actually changed in the new deployment, and finally application-level connection handling. That covers almost every real-world cause of this exact symptom."
+
 # Troubleshooting Kubernetes CrashLoopBackOff
 
 **CrashLoopBackOff** means a container keeps crashing, and Kubernetes keeps trying to restart it, waiting longer between each subsequent attempt (exponential backoff). It is not the root cause itself—it is simply a symptom indicating that something underneath is broken.
