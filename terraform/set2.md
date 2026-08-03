@@ -113,15 +113,34 @@ If a resource is manually deleted from **AWS** but still exists in the **Terrafo
 
 > **Senior Signal:** This behavior occurs because **Terraform** treats the configuration as the **desired state**, and its primary function is to reconcile the real-world infrastructure to match that declared state.
 
-## 8.What will happen if you delete a resource manually from AWS but it still exists in Terraform state?
+## How do you store secrets in terraform and how you call them in the code?
 
-**Answer:**
-If a resource is manually deleted from **AWS** but still exists in the **Terraform state**, **Terraform** will behave as follows:
+# Centralized Secret Management in Terraform using AWS SSM
 
-* It will detect the mismatch during the **`terraform plan`** phase. 
-* Since the resource is defined in the **configuration** but missing in the actual infrastructure, it will plan to **recreate** it during **`terraform apply`**.
+In our Terraform configurations, we strictly avoid hardcoding sensitive information such as database passwords or API keys. Instead, we centralize our secrets by storing them as **SecureString** parameters within **AWS Systems Manager (SSM) Parameter Store**. 
 
-> **Senior Signal:** This behavior occurs because **Terraform** treats the configuration as the **desired state**, and its primary function is to reconcile the real-world infrastructure to match that declared state.
+During deployment, Terraform dynamically retrieves and injects these values without exposing them within the version-controlled codebase.
+
+---
+
+## The Workflow
+
+1. **Secure Storage:** Secrets are managed directly in AWS SSM Parameter Store as encrypted `SecureString` types.
+2. **Just-in-Time Retrieval:** Terraform uses a data source to fetch the plaintext value during the `plan` or `apply` phase.
+3. **Dynamic Injection:** The retrieved value is referenced directly in the resources that require it.
+
+---
+
+## Terraform Implementation Example
+
+### 1. Retrieve the Secret via Data Source
+To securely fetch the secret at deployment time, use the `aws_ssm_parameter` data source and ensure `with_decryption` is set to `true`.
+
+```hcl
+data "aws_ssm_parameter" "database_password" {
+  name            = "/prod/database/password"
+  with_decryption = true
+}
 
 ## 9. What are Terraform workspaces, and when would you use them?
 
