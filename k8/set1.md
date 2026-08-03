@@ -120,43 +120,67 @@ During an active node failure, I would investigate and monitor the situation usi
 ## Your company has a production application running on EKS, After a new deployment users start reporting intermittent 502/503 errors. CPU amd memory usage of the pods looks normal and pod are in running state how would you trouble shoot the issue step by step
 
 
-Here’s how I’d explain it in an interview:
+# Troubleshooting Kubernetes 502/503 Errors with Healthy Pods
+
+When Pods are running fine and CPU/memory usage look normal, but users are receiving **502 Bad Gateway** or **503 Service Unavailable** errors, the problem isn't the workload itself. It indicates a breakdown in the traffic path between the user and the Pod. 
+
+To isolate the issue, work through the request path systematically from the outside in using this 6-step framework.
 
 ---
 
-When users start seeing intermittent 502/503s right after a deployment on EKS, and the pods look fine (Running, normal CPU/memory), I never jump straight into the application code. I systematically follow the request path from the user all the way to the pod so I don’t miss anything outside the app.
+## 1. Verify Readiness Probes (Running ≠ Ready)
+A Pod can be in a `Running` state but not actually be ready to serve traffic. 
+* **The Risk:** If a readiness probe fails or flaps intermittently, Kubernetes pulls the Pod out of the Service endpoints. This creates an on-and-off traffic gap, resulting in intermittent 502 errors.
+* **Action:** Run the following commands to inspect the `READY` column and check for flapping probes in the events:
+  ```bash
+  kubectl get pods
+  kubectl describe pod <pod-name>
 
-## Step 1 – Verify the deployment
-I first confirm the deployment itself succeeded: `kubectl get deployment` and then `describe` it. I’m looking for replica failures, image pull issues, probe failures, or bad rollout events. If the desired number of pods isn’t available, that’s already a red flag.
+# Troubleshooting Kubernetes CrashLoopBackOff
 
-## Step 2 – Check pod status
-Next I run `kubectl get pods -o wide`. Even if everything shows Running, that only means the container process is up — it doesn’t guarantee the application is healthy or ready to serve traffic.
+**CrashLoopBackOff** means a container keeps crashing, and Kubernetes keeps trying to restart it, waiting longer between each subsequent attempt (exponential backoff). It is not the root cause itself—it is simply a symptom indicating that something underneath is broken.
 
-## Step 3 – Check pod logs
-Because the problem started right after the release, I immediately look at the application logs (`kubectl logs` and `--previous` if there were restarts). I’m hunting for connection errors, NPEs, timeouts, external dependency failures, or configuration mistakes.
+---
 
-## Step 4 – Verify readiness probes
-This is one of the most common culprits after deployments. I describe the pods and check whether the readiness probe is failing. If it is, Kubernetes removes those pods from the Service endpoints, which directly causes intermittent 502/503s for users.
+## Initial Troubleshooting Steps
 
-## Step 5 – Verify Service endpoints
-I check what the Service is actually routing to with `kubectl get endpoints` or `describe svc`. An empty or incomplete endpoints list means the Service has no healthy backends — classic cause of 503s.
+Before guessing the cause, run these two essential diagnostic commands to gather data:
 
-## Step 6 – Verify the Ingress
-I inspect the Ingress resource to confirm the correct Service name, port, host, and path rules. A very frequent post-deployment mistake is the application now listening on a different port while the Ingress is still pointing to the old one.
+1. **`kubectl describe pod <pod-name>`**  
+   Look at the container's **Exit Code** and inspect the **Events** section at the bottom for structural or lifecycle errors.
+2. **`kubectl logs <pod-name> --previous`**  
+   Because the container keeps restarting, checking the standard logs only shows the current (booting) instance. The `--previous` flag pulls the logs from the specific container instance that just crashed.
 
-## Step 7 – Check ALB target health
-Since we’re on EKS with an AWS ALB, I look at the target group health (console or `aws elbv2 describe-target-health`). Unhealthy targets cause the ALB to return 503s even when the pods themselves look fine.
+---
 
-## Step 8 – Verify health-check paths
-I compare the ALB health-check path with what the application actually exposes. If the team changed `/health` to `/healthz` (or similar) in the new release but forgot to update the target group, every health check fails and targets go unhealthy.
+## 6 Common Root Causes
 
-## Step 9 – Test the service internally
-To isolate the problem, I spin up a debug pod and curl/wget the Service from inside the cluster. If that succeeds, I know the application is fine and the issue is between the ALB/Ingress and Kubernetes (security groups, target group, etc.).
+Most `CrashLoopBackOff` issues fall into one of these six buckets:
 
-## Step 10 – Check application response time
-Sometimes the new version is just slower. If request processing exceeds the ALB idle timeout, clients get 502s while the pods still appear healthy.
+### 1. Application-Level Errors
+The code itself is throwing an unhandled exception or runtime error. This is frequently caused by missing environment variables, missing configuration files, or database connection failures. 
+* **Diagnostic:** The application logs (`--previous`) will usually output a stack trace showing exactly what failed.
 
-## Step 11 – Review recent deployment changes & rollback if needed
-Finally I compare the new version against the previous one — env vars, ConfigMaps, Secrets, image tag, probes, ports, etc. — using rollout history. If I suspect the release introduced the problem, I do a `kubectl rollout undo`. If the errors disappear, we’ve confirmed the new deployment was the cause.
+### 2. Resource Limitations (OOMKilled)
+The container is attempting to use more memory than its defined resource limit allows, forcing Kubernetes to terminate it.
+* **Diagnostic:** `kubectl describe pod` will show **Exit Code 137** and a termination reason of **OOMKilled**. 
+* **Resolution:** Increase the memory `limits` in the Pod spec or debug the application for memory leaks.
 
-That end-to-end path — from deployment → pods → probes → Service → Ingress → ALB → internal test → response time → change comparison — usually surfaces the root cause without wasting time guessing.
+### 3. Misconfigured Health Probes
+The application is actually completely fine, but its **Liveness Probe** is too aggressive or strict. For example, if an application takes 40 seconds to fully boot up but the liveness probe starts checking after 10 seconds, Kubernetes will kill the healthy, booting container thinking it is deadlocked.
+* **Resolution:** Use a **Startup Probe** (`startupProbe`) to give the container a safe buffer time to initialize before the standard liveness checks take over.
+
+### 4. Image or Command Problems
+This happens when you reference an incorrect image tag, or the container's startup command (`CMD` or `ENTRYPOINT`) exits immediately instead of running as a long-lived foreground process.
+* **Diagnostic:** Often shows **Exit Code 0** (completed successfully) when Kubernetes expected a continuous running process.
+
+### 5. Volume or Mount Issues
+The container cannot start because its required dependencies are missing at the cluster level. This includes referencing a `ConfigMap` or `Secret` that hasn't been created yet, or trying to mount a `PersistentVolumeClaim` (PVC) that is not currently bound.
+
+### 6. Init Container Failures
+If the Pod relies on an `initContainer` to run setup tasks (like running database migrations or waiting for a dependency) and that init container keeps crashing, the main application container will never get the chance to start. 
+* **Diagnostic:** The Pod status will show `CrashLoopBackOff`, but looking closer at the container states will show the error originated in the init container.
+
+---
+
+> **Summary Checklist:** Check the exit code and events first using `describe`, pull the `--previous` logs, and match the findings against these six buckets to quickly isolate the issue.
