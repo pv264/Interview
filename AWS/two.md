@@ -9,6 +9,71 @@ Instead of the application server handling the CPU-intensive encryption and decr
 
 > **Senior Signal:** Terminating TLS at the Load Balancer (like an AWS ALB using ACM) is standard practice because it centralizes certificate management and offloads CPU strain from your application nodes. However, in highly regulated environments (like PCI-DSS, HIPAA, or modern Zero-Trust architectures), security teams may require **End-to-End Encryption**. In those cases, you would either use **TLS Pass-through** (using a Network Load Balancer) or configure the ALB to re-encrypt the traffic before sending it to the backend.
 
+
+
+# Load Balancer vs API Gateway
+
+A **Load Balancer** and an **API Gateway** serve different purposes in a modern application architecture.
+
+## Load Balancer
+
+A **Load Balancer** distributes incoming traffic across multiple backend servers to improve **availability** and **scalability**.
+
+### Key Responsibilities
+- Distributes traffic across multiple backend instances.
+- Performs **health checks** to route traffic only to healthy servers.
+- Supports **SSL/TLS termination**.
+- Routes traffic based on rules (host-based or path-based).
+- Improves fault tolerance and high availability.
+
+> **Note:** A Load Balancer does **not** provide API-specific features such as authentication, rate limiting, or request validation.
+
+---
+
+## API Gateway
+
+An **API Gateway** sits in front of backend services and manages API requests.
+
+### Key Responsibilities
+- Authentication and authorization.
+- Request validation.
+- Rate limiting and throttling.
+- Response caching.
+- API versioning.
+- Monitoring and analytics.
+- Request/response transformation.
+
+---
+
+## How They Work Together
+
+In many production environments, **both components are used together**.
+
+- The **API Gateway** handles **API management, security, authentication, and policy enforcement**.
+- The **Load Balancer** distributes requests from the API Gateway to healthy backend services running on:
+  - EC2
+  - ECS
+  - EKS
+  - AWS Lambda
+
+### Typical Request Flow
+
+```text
+Client
+   │
+   ▼
+API Gateway
+(Authentication, Authorization, Rate Limiting)
+   │
+   ▼
+Load Balancer
+(Traffic Distribution & Health Checks)
+   │
+   ▼
+Backend Services
+(EC2 / ECS / EKS / Lambda)
+```
+
 ## 2.What is AWS Certificate Manager (ACM)?
 
 **Answer:**
