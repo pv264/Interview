@@ -16,43 +16,6 @@ In Kubernetes, liveness and readiness probes are health checks configured inside
 > **Senior Signal:** A strong candidate will clearly emphasize the difference in Kubernetes' reaction: Readiness failures mean "stop sending traffic," while Liveness failures mean "restart the container." To show advanced knowledge, mention the **`startupProbe`**. If you have a legacy application that takes several minutes to start, relying solely on a liveness probe might cause an endless crash-loop because it kills the container before it finishes booting. A `startupProbe` disables the liveness/readiness checks until the app successfully starts for the first time!
 
 
-## 2. What happens when you execute `kubectl apply -f deployment.yaml`?
-
-**Answer:**
-When you run `kubectl apply -f deployment.yaml`, it triggers a highly coordinated workflow across the Kubernetes control plane and worker nodes to move your application from a declaration to a running state. 
-
-Here is exactly what happens step-by-step:
-
-### 1. Client-Side & Authentication (The Request)
-* The `kubectl` CLI reads your local YAML manifest, validates it against client-side schemas, and sends it as an **HTTPS request** to the Kubernetes API Server.
-* The API Server authenticates your identity (via tokens or certificates) and checks authorization rules using **RBAC (Role-Based Access Control)** to ensure you have permission to deploy.
-* **Admission Controllers** then intercept the request to validate or mutate it (e.g., injecting sidecars or enforcing policy checks) if needed.
-* Once fully accepted, the desired state of the deployment is securely written to **ETCD**.
-
-### 2. Control Plane Orchestration (The Reconcile Loop)
-* **Deployment Controller:** Detects the new Deployment object in ETCD and automatically creates a corresponding **ReplicaSet**.
-* **ReplicaSet Controller:** Compares the desired number of replicas defined in your YAML against the current cluster state. Realizing pods are missing, it creates the required **Pod objects** in the API Server.
-* **Scheduler:** Watches for newly created pods that don't have a node assigned to them. It evaluates all available worker nodes based on resources, taints, tolerations, and scheduling rules, selecting the most appropriate node for each Pod.
-
-### 3. Node-Level Execution (The Realization)
-* **Kubelet:** The Kubelet agent running on the selected worker node notices the pod assignment. It instructs the local **container runtime** (like `containerd` or `CRI-O`) to pull the container image from the registry (such as **Amazon ECR**) if it isn't already cached locally.
-* **Container Lifecycle:** The runtime starts the containers. Once the Pods pass their health checks, the Kubelet reports their updated status back to the API Server, which updates ETCD.
-
-### 4. Networking & Updates
-* **Kube-Proxy:** Runs on every node and watches for changes to Services and Endpoints. It updates its routing rules (like iptables or IPVS) to ensure that cluster traffic is properly routed to the new Pods.
-* **Rolling Updates:** If this action was an update to an existing deployment rather than a fresh install, Kubernetes handles the transition via a **rolling update**—gradually bringing up new Pods and ensuring they are healthy before terminating the old ones to avoid downtime.
-
----
-
-### Summary of Responsibilities
-* **`kubectl`:** Parses the manifest and initiates the API call.
-* **API Server & ETCD:** Gatekeep the request and log the system's ground truth.
-* **Controllers & Scheduler:** Determine *what* needs to be created and *where* it should live.
-* **Kubelet & Runtime:** Physically fetch the images and spin up the containers.
-* **Kube-Proxy:** Plumbs the network paths to expose the workloads.
-
-> **Senior Signal:** Walking through the lifecycle of a `kubectl` command from the client API request down to the node runtime shows a comprehensive understanding of the Kubernetes architecture. Highlighting the separation between the **Scheduler** (which only chooses the node) and the **Kubelet** (which actually runs the runtime commands) is a key differentiator that separates senior engineers from those who treat Kubernetes like a black box.
-
 ## 4 .What happens when a container image isn't available in ECR, and how do you troubleshoot it?
 
 **Answer:**
