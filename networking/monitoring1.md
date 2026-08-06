@@ -30,6 +30,23 @@ In **observability**, **logs**, **metrics**, and **traces** are the three main w
 In my projects, I used **Prometheus** and **Grafana** for metrics monitoring, and I also worked with **Jaeger** for distributed tracing in microservices environments.
 
 > **Senior Signal:** The modern industry standard is rapidly moving towards **OpenTelemetry** (OTel). Mentioning OTel in an interview shows forward-thinking, as it provides a single set of APIs and agents to capture all three pillars (Logs, Metrics, and Traces) in a unified way, rather than instrumenting applications with separate tools for each.
+
+
+# How does Prometheus collect metrics?
+
+Prometheus uses a **pull-based model** to collect metrics.
+
+Applications expose metrics through an HTTP endpoint, usually **`/metrics`**, using Prometheus client libraries or exporters.
+
+Prometheus discovers these targets through static configuration or service discovery, such as **Kubernetes** or **EC2**, and periodically scrapes the endpoint, typically every **15 seconds**.
+
+The collected metrics are stored in Prometheus's **time-series database (TSDB)** with timestamps and labels.
+
+We can then:
+
+- Query the metrics using **PromQL**.
+- Visualize them in **Grafana**.
+- Define alert rules that send notifications through **Alertmanager** if specific conditions are met.
 ## 2. Explain about p50, p95, and p99 latency percentiles
 
 **Answer:**
@@ -55,3 +72,60 @@ Averages are dangerous in observability because they hide the outliers. If 99 re
 > **Senior Signal:** In enterprise SLA (Service Level Agreement) discussions, we rarely promise a p50 latency. We almost always guarantee a **p95 or p99** threshold (e.g., "p99 response time will be under 200ms"). Showing that you understand *why* averages lie and why p99 matters for capacity planning and auto-scaling decisions is a huge plus in SRE/DevOps interviews!
 
 Threshold values are usually decided based on load testing, application SLA requirements, and system capacity. We gradually increase traffic during performance testing and observe metrics like P95 latency, CPU, memory, and error rate. The point where performance starts degrading becomes the baseline for alerting or autoscaling thresholds. These thresholds are later fine-tuned using real production traffic patterns.
+
+
+
+## How I Reduce MTTR (Mean Time to Recovery)
+
+I reduce MTTR by focusing on every stage of the incident response process:
+
+1. **Proactive Monitoring & Alerting**
+   - Implement proactive monitoring and meaningful alerts to detect issues as early as possible.
+
+2. **Faster Root Cause Identification**
+   - Use centralized logging and distributed tracing to quickly identify the root cause of incidents.
+
+3. **Standardized Troubleshooting**
+   - Maintain well-documented runbooks so the team can troubleshoot consistently without wasting time.
+
+4. **Automated Recovery**
+   - Automate recovery tasks wherever possible, such as:
+     - Restarting failed services
+     - Rolling back problematic deployments
+
+5. **Continuous Improvement**
+   - Perform a root cause analysis (RCA) after every incident.
+   - Improve monitoring, automation, and documentation to prevent similar issues and further reduce recovery time in the future.
+
+
+   # What is an Error Budget?
+
+An error budget is the maximum amount of downtime or service failure that is acceptable while still meeting our Service Level Objective (SLO). For example, if our SLO is **99.9% availability**, the remaining **0.1%** becomes our error budget. In a 30-day month, that translates to approximately **43 minutes** of allowable downtime.
+
+The purpose of an error budget is to balance reliability with the speed of delivering new features. As long as we're operating within the error budget, the team can continue deploying new releases and making changes with confidence. However, if the error budget is exhausted, we pause non-critical or risky deployments and focus on improving the system's reliability by investigating the root cause, fixing issues, and strengthening monitoring or automation. Once the service is stable again, we resume normal development and deployments.
+
+
+# Explain SLI, SLO, SLA
+
+SLI, SLO, and SLA are three key concepts used to measure and manage the reliability of a service.
+
+- An **SLI (Service Level Indicator)** is the actual metric we measure to understand how the service is performing, such as availability, latency, or error rate.
+- An **SLO (Service Level Objective)** is the target we set for that metric. For example, we might set a goal of **99.9% monthly availability**.
+- An **SLA (Service Level Agreement)** is a formal agreement with customers that defines the minimum level of service we promise to provide and any penalties or service credits if we fail to meet that commitment.
+
+## Example
+
+If our application achieves **99.95% availability** during the month, that is our **SLI**. Since our **SLO** is **99.9%**, we've successfully met our internal reliability target. If our customer **SLA** is **99.5%**, we've also fulfilled our contractual commitment.
+
+In simple terms:
+
+- **SLI** tells us how the service is performing.
+- **SLO** tells us what we're aiming for.
+- **SLA** defines what we've promised our customers.
+
+
+# Why don't companies aim for 100% availability?
+
+Companies don't aim for **100% availability** because it's extremely difficult and expensive to achieve. Systems require planned maintenance, and unexpected issues like hardware failures, network outages, software bugs, or human errors can still occur.
+
+As availability targets increase, the cost and complexity grow significantly. Instead of chasing **100% uptime**, companies define realistic **SLOs** based on business needs and use **error budgets** to balance reliability with the speed of delivering new features. This approach provides a reliable service while keeping costs and development efforts under control.
