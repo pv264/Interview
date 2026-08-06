@@ -111,11 +111,19 @@ SLI, SLO, and SLA are three key concepts used to measure and manage the reliabil
 
 - An **SLI (Service Level Indicator)** is the actual metric we measure to understand how the service is performing, such as availability, latency, or error rate.
 - An **SLO (Service Level Objective)** is the target we set for that metric. For example, we might set a goal of **99.9% monthly availability**.
-- An **SLA (Service Level Agreement)** is a formal agreement with customers that defines the minimum level of service we promise to provide and any penalties or service credits if we fail to meet that commitment.
+-# What is an SLA (Service Level Agreement)?
+
+An **SLA (Service Level Agreement)** is a formal contract between the service provider and the customer. It defines the minimum level of service the provider guarantees, such as **availability**, **response time**, or **support resolution time**.
+
+It also specifies what happens if the provider fails to meet those commitments, which may include **service credits, refunds, or other penalties**.
+
+Unlike an **SLO**, which is an internal engineering target, an **SLA** is a customer-facing commitment with business or legal consequences.
 
 ## Example
 
-If our application achieves **99.95% availability** during the month, that is our **SLI**. Since our **SLO** is **99.9%**, we've successfully met our internal reliability target. If our customer **SLA** is **99.5%**, we've also fulfilled our contractual commitment.
+For example, suppose a cloud provider offers an **SLA of 99.5% monthly availability**. This means the provider guarantees that the service will be available at least **99.5% of the time**.
+
+If the actual availability drops to **99.2%**, the provider has violated the SLA and may compensate customers with **service credits or other remedies**, as defined in the agreement.
 
 In simple terms:
 
