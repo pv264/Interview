@@ -32,6 +32,31 @@ In my projects, I used **Prometheus** and **Grafana** for metrics monitoring, an
 > **Senior Signal:** The modern industry standard is rapidly moving towards **OpenTelemetry** (OTel). Mentioning OTel in an interview shows forward-thinking, as it provides a single set of APIs and agents to capture all three pillars (Logs, Metrics, and Traces) in a unified way, rather than instrumenting applications with separate tools for each.
 
 
+# How does Prometheus collect metrics? (Example with Node Exporter)
+
+Prometheus uses a **pull-based model** to collect metrics.
+
+For example, on a **Linux server**, we install **Node Exporter**, which collects system metrics such as **CPU, memory, disk, and network usage**.
+
+Node Exporter exposes these metrics through an HTTP endpoint, usually:
+
+```text
+http://<server-ip>:9100/metrics
+```
+
+Prometheus is configured with this endpoint and periodically, typically every **15 seconds**, sends an **HTTP GET request** to scrape the latest metrics.
+
+It then stores the collected data in its **time-series database (TSDB)** along with **timestamps** and **labels**.
+
+We can then:
+
+- Query these metrics using **PromQL**.
+- Visualize them in **Grafana** dashboards.
+- Create **alert rules**.
+
+If a condition like **high CPU usage** is met, Prometheus sends the alert to **Alertmanager**, which forwards notifications to channels such as **Slack**, **email**, or **PagerDuty**.
+
+
 # How does Prometheus collect metrics?
 
 Prometheus uses a **pull-based model** to collect metrics.
