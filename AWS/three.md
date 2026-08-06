@@ -73,3 +73,214 @@ I have worked on AWS Lambda for infrastructure automation. One of the tasks I im
 * **Trigger:** The Lambda function was triggered on a schedule using Amazon EventBridge. At the scheduled time, EventBridge invoked the Lambda function.
 * **Execution (Boto3):** The function used the AWS SDK (Boto3) to identify the target EC2 instances—either by specific instance IDs or by tags like `Environment=Dev`—and then called the `StopInstances` API.
 * **Logging:** After stopping the instances, the function wrote logs to CloudWatch so we could verify that the execution completed successfully.
+
+
+# Difference Between Target Tracking and Step Scaling
+
+Both **Target Tracking** and **Step Scaling** are Auto Scaling policies in AWS that automatically add or remove EC2 instances based on CloudWatch metrics.
+
+The main difference is **how they decide how many instances to add or remove.**
+
+---
+
+# 1. Target Tracking Scaling
+
+Target Tracking works like a thermostat in an air conditioner.
+
+For example:
+
+Suppose I set the target CPU utilization to:
+
+```text
+50%
+```
+
+Now AWS continuously monitors CPU.
+
+If CPU increases above 50%:
+
+```text
+CPU = 70%
+```
+
+AWS automatically adds instances until CPU comes back close to 50%.
+
+If CPU later drops to:
+
+```text
+30%
+```
+
+AWS automatically removes instances until CPU returns near the target.
+
+The important point is:
+
+**I only define the target value.**
+
+AWS automatically decides:
+
+* When to scale
+* How many instances to add
+* How many instances to remove
+
+It's simple and requires very little tuning.
+
+---
+
+# Example
+
+Target CPU:
+
+```text
+50%
+```
+
+Current CPU:
+
+```text
+75%
+```
+
+AWS may decide:
+
+```text
+Add 2 Instances
+```
+
+After scaling:
+
+```text
+CPU = 48%
+```
+
+AWS stops scaling.
+
+---
+
+# When to Use Target Tracking
+
+I would use Target Tracking when:
+
+* CPU is a good representation of workload.
+* Traffic patterns are predictable.
+* I don't need fine-grained control over scaling.
+
+For example:
+
+* Web applications
+* REST APIs
+* General-purpose application servers
+
+---
+
+# 2. Step Scaling
+
+Step Scaling gives much more control.
+
+Instead of defining a target, I define multiple thresholds.
+
+For example:
+
+```text
+CPU > 60%
+
+Add 1 Instance
+```
+
+```text
+CPU > 75%
+
+Add 2 Instances
+```
+
+```text
+CPU > 90%
+
+Add 4 Instances
+```
+
+Similarly, I can define scale-in rules.
+
+AWS simply follows the rules I configure.
+
+I decide exactly:
+
+* When to scale
+* How many instances to add
+* How many instances to remove
+
+---
+
+# Example
+
+CloudWatch Alarm:
+
+```text
+CPU = 92%
+```
+
+My policy says:
+
+```text
+CPU > 90%
+
+↓
+
+Add 4 Instances
+```
+
+AWS immediately launches four new instances.
+
+---
+
+# Real Project Example
+
+In our LLM infrastructure, we **didn't use CPU utilization** because it wasn't a good indicator of workload.
+
+Our Haystack application spent much of its time waiting for downstream services like **Milvus** and the **vLLM inference server**. During load testing, CPU utilization remained relatively low even though request queues and response times increased.
+
+Instead, we used the ALB **RequestCountPerTarget** metric.
+
+Based on our performance testing:
+
+* Two Haystack instances could handle approximately **60 requests every 10 seconds**.
+* That translates to **360 requests per minute**.
+* Dividing that across two instances gave us a threshold of **180 requests per target per minute**.
+
+We configured CloudWatch alarms and **Step Scaling** policies.
+
+For example:
+
+* If RequestCountPerTarget exceeded the threshold, the Auto Scaling Group added another Haystack instance.
+* As traffic increased further, additional instances were launched according to the scaling policy.
+
+We chose Step Scaling because it gave us precise control over how aggressively the application layer scaled based on real traffic rather than CPU utilization.
+
+---
+
+# Key Differences
+
+| Target Tracking                                  | Step Scaling                                                       |
+| ------------------------------------------------ | ------------------------------------------------------------------ |
+| Set a target value (for example, CPU 50%)        | Define multiple thresholds and scaling actions                     |
+| AWS decides how many instances to add or remove  | You define exactly how many instances to add or remove             |
+| Easier to configure                              | More flexible and customizable                                     |
+| Best for predictable workloads                   | Best for workloads with varying traffic patterns or custom metrics |
+| Commonly uses CPU or average utilization metrics | Can use custom CloudWatch metrics such as RequestCountPerTarget    |
+
+---
+
+# Which One Would You Choose?
+
+It depends on the application.
+
+If CPU accurately reflects the workload, Target Tracking is usually sufficient because AWS automatically maintains the desired utilization.
+
+If the application requires more control or CPU isn't a good indicator of load, I would use Step Scaling with a metric that better represents the application's behavior.
+
+---
+
+# Interview Summary
+
+> **"Target Tracking and Step Scaling are both Auto Scaling policies, but they work differently. In Target Tracking, I define a target metric such as 50% CPU utilization, and AWS automatically adjusts the number of instances to maintain that target. It's simple to configure and works well when the chosen metric accurately reflects the workload. In Step Scaling, I define multiple CloudWatch thresholds and specify exactly how many instances should be added or removed at each threshold. It provides greater control and is useful when scaling decisions need to be based on custom metrics or application-specific behavior. In my LLM project, we used Step Scaling with the ALB RequestCountPerTarget metric because CPU utilization didn't accurately represent the application's workload."**
+
