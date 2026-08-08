@@ -211,30 +211,21 @@ This monitoring setup allowed us to proactively detect **GPU memory saturation**
 ## Jenkins Pipeline Failure: AWS ECR Authentication Issue
 
 **Answer:**
-We had a **Jenkins pipeline** that builds a **Docker image** and pushes it to **AWS ECR**. Suddenly the pipeline started failing during the image push stage, even though the same pipeline was working earlier.
+# Jenkins ECR Authentication Issue
 
-### First, I checked the pipeline logs in Jenkins and noticed the error:
-`no basic auth credentials`
+We had a Jenkins pipeline that built a Docker image and pushed it to Amazon ECR. The pipeline was working earlier, but suddenly started failing during the Docker push stage.
 
-This indicated that the pipeline was not authenticated to **AWS ECR**.
+I checked the Jenkins logs and found the error **`no basic auth credentials`**. This indicated that Docker was not properly authenticated with ECR.
 
-### I verified:
-* **Jenkins credentials configuration**
-* **IAM permissions** for the **EC2 instance** running **Jenkins**
-* **Docker login commands** in the pipeline
+I first checked the IAM role of the Jenkins EC2 instance and confirmed that it had the required ECR permissions. Then I checked the Docker login configuration.
 
-### Root Cause:
-After deeper investigation, I found that the **ECR authentication token** had expired because the pipeline was using an old login method that cached credentials. Since **ECR tokens** are valid only for **12 hours**, the authentication failed.
+I found that the pipeline was using an old cached ECR login instead of logging in again before the push. Since the ECR login token is valid for 12 hours, the old authentication had expired. Because of this, Docker could not authenticate with ECR and the image push failed.
 
+To fix it, I updated the Jenkins pipeline to perform an ECR login before every Docker push using **`aws ecr get-login-password`** and **`docker login`**. This generates a fresh login token for each pipeline run.
 
+I then reran the pipeline and verified that the login was successful and the Docker image was pushed to ECR successfully.
 
-### Prevention:
-* Updated the **CI/CD pipeline** to always refresh **ECR login tokens**
-* Improved **pipeline logs** to make authentication failures easier to identify
-* Documented the fix for the team
-
-> **Senior Signal:** When running **Jenkins** on **AWS**, the most secure way to handle **ECR** authentication is by using **IAM Roles** attached to the **EC2 instance** (Instance Profile) and ensuring the `aws ecr get-login-password` command is executed within the pipeline to handle the 12-hour token rotation automatically.
-
+As a preventive measure, we made ECR login an explicit step in the pipeline instead of depending on old cached credentials, and documented the fix for the team.
 ## 6. What is the complex issue that you handled recently?
 
 **Answer:**
