@@ -1,21 +1,21 @@
 ## 1.What was the last Terraform issue you fixed?
 
 **Answer:**
-During a **Terraform** deployment, **`terraform apply`** started showing that it would **recreate** an **EC2 instance** even though we had not changed anything related to the instance.
+# Terraform EC2 Instance Recreation Due to AMI Change
 
-### Problem Identification:
-I reviewed the **`terraform plan`** output carefully and noticed that the **AMI ID** had changed because it was being fetched using a **data source** for the latest **AMI**.
+During a Terraform deployment, **`terraform plan`** showed that an EC2 instance would be recreated even though we had not made any intentional changes to the instance.
 
+I reviewed the **`terraform plan`** output carefully and noticed that the AMI ID had changed. The AMI was being retrieved dynamically using a data source with **`most_recent = true`**. Whenever a new AMI was released, the data source returned the newer AMI ID. Terraform detected that the AMI attribute of the EC2 instance had changed, and because changing the AMI requires replacing an EC2 instance, Terraform planned to destroy and recreate it.
 
-Whenever a new AMI was released, Terraform detected it as a change and tried to replace the EC2 instance.
+## Root Cause
 
-Root Cause:
-The root cause was using dynamic AMI lookup with most_recent = true, which caused Terraform to detect changes and plan instance replacement.
+The root cause was the dynamic AMI lookup using **`most_recent = true`**, which caused the AMI ID to change whenever a newer AMI became available.
 
-Resolution:
-We pinned the AMI ID explicitly or
+## Resolution
 
-Used lifecycle rules:
+To prevent Terraform from recreating the production EC2 instance because of an AMI change, we used the **`lifecycle` `ignore_changes`** rule for the AMI attribute.
+
+Therefore, when a new AMI is released, Terraform does not automatically replace the running EC2 instance.
 
 ## 2.What is a production outage you handled recently? What was the root cause?
 
