@@ -19,43 +19,52 @@ Used lifecycle rules:
 
 ## 2.What is a production outage you handled recently? What was the root cause?
 
-**Answer:**
-Recently we had a production outage where the application became inaccessible to users.
+# Production Incident – 502 Errors
 
-### Situation:
-Users reported that the application endpoint was returning **502 errors** from the **Application Load Balancer (ALB)**. The service was running on **EC2 instances** behind an **ALB**.
+Recently, we had a production incident where users started experiencing **502 errors** while accessing the application. We had **CloudWatch monitoring configured for our Application Load Balancer (ALB)**, so we received an alert when the ALB 5xx error count crossed the configured threshold.
 
-### Initial Investigation:
-* First, I checked the **AWS ALB Target Group** health status, and I noticed that all targets were marked **unhealthy**.
-* Then I logged into one of the **EC2 instances** and checked the application service.
+## Incident Investigation
 
+I started the investigation from the **ALB** because that was where the alert originated.
 
+I checked the following:
 
-### Findings:
-* The application container was **crashing repeatedly**, which caused the **health checks** to fail.
-* I checked the **Docker logs** and **system logs**, and noticed the application was running **out of memory (OOM)**.
+- ALB metrics
+- Target group health status
+- Backend EC2 instance health
 
-### Root Cause:
-A new application deployment had introduced **higher memory consumption**, but the **EC2 instance size** had not been updated. As traffic increased, the application exhausted the available memory and the container kept restarting, which caused the targets to become **unhealthy** in the load balancer.
+I found that the **backend EC2 targets were unhealthy**.
 
-### Resolution:
-To restore service quickly:
-1. I **rolled back** the application to the previous stable version.
-2. **Restarted** the containers.
-3. Verified that the **target group health checks** became healthy again and traffic started flowing normally.
+I then connected to one of the affected EC2 instances and checked the application containers using Docker. I noticed that the **application container was repeatedly restarting**.
 
-### Prevention:
-After the incident:
-* We **increased the instance memory capacity**.
-* Added **CloudWatch alarms** for memory utilization.
-* Implemented **Auto Scaling** based on traffic and resource usage.
-* Added better **monitoring and alerts** to detect container restarts earlier.
+I checked the **Docker logs** and **Linux system logs** and found OOM-related messages indicating that the application process was being killed because the EC2 instance was running out of memory.
 
-### Result:
-The service was restored quickly and we improved monitoring to prevent similar outages in the future.
+I also checked the instance memory metrics and correlated the timing with the incident.
 
-> **Senior Signal:** 502 errors at the **ALB** level almost always point to a communication failure between the **Load Balancer** and the **Target Group**. When targets are "Unhealthy," the priority is identifying if it's a **Network/Security Group** issue or an **Application/Runtime** failure like an **OOM Kill**.
+## Root Cause Identification
 
+I then checked the recent deployment history and found that a **new application version had been deployed shortly before the issue started**.
+
+The new version had higher memory consumption compared to the previous stable version.
+
+Because traffic had increased, the EC2 instance did not have enough available memory, which caused the container to crash repeatedly.
+
+The sequence was:
+
+```text
+Higher application memory consumption
+            ↓
+EC2 instance runs out of memory
+            ↓
+Application container gets killed
+            ↓
+Container repeatedly restarts
+            ↓
+Application health check fails
+            ↓
+ALB marks target as unhealthy
+            ↓
+Users receive 502 errors
 ## 3.How did you reduce infrastructure cost in your project?
 
 **Answer:**
