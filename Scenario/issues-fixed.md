@@ -51,7 +51,7 @@ Because traffic had increased, the EC2 instance did not have enough available me
 
 The sequence was:
 
-```text
+
 Higher application memory consumption
             ↓
 EC2 instance runs out of memory
@@ -65,6 +65,7 @@ Application health check fails
 ALB marks target as unhealthy
             ↓
 Users receive 502 errors
+
 ## 3.How did you reduce infrastructure cost in your project?
 
 **Answer:**
