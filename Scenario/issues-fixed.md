@@ -53,7 +53,6 @@ So rather than manually changing the Docker image on the EC2 instance, I trigger
 
 `1.4.0`
 
-The **ECR repository itself remained the same**. We were only changing the image tag that the deployment referenced.
 
 Jenkins pulled the existing `1.4.0` image from ECR and deployed it to the EC2 instance, replacing the container running `1.5.0`.
 
