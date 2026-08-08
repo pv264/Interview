@@ -19,53 +19,18 @@ Used lifecycle rules:
 
 ## 2.What is a production outage you handled recently? What was the root cause?
 
-# Production Incident – 502 Errors
-
-Recently, we had a production incident where users started experiencing **502 errors** while accessing the application. We had **CloudWatch monitoring configured for our Application Load Balancer (ALB)**, so we received an alert when the ALB 5xx error count crossed the configured threshold.
-
-## Incident Investigation
-
-I started the investigation from the **ALB** because that was where the alert originated.
-
-I checked the following:
-
-- ALB metrics
-- Target group health status
-- Backend EC2 instance health
-
-I found that the **backend EC2 targets were unhealthy**.
-
-I then connected to one of the affected EC2 instances and checked the application containers using Docker. I noticed that the **application container was repeatedly restarting**.
-
-I checked the **Docker logs** and **Linux system logs** and found OOM-related messages indicating that the application process was being killed because the EC2 instance was running out of memory.
-
-I also checked the instance memory metrics and correlated the timing with the incident.
-
-## Root Cause Identification
-
-I then checked the recent deployment history and found that a **new application version had been deployed shortly before the issue started**.
-
-The new version had higher memory consumption compared to the previous stable version.
-
-Because traffic had increased, the EC2 instance did not have enough available memory, which caused the container to crash repeatedly.
-
-The sequence was:
-
-
-Higher application memory consumption
-            ↓
-EC2 instance runs out of memory
-            ↓
-Application container gets killed
-            ↓
-Container repeatedly restarts
-            ↓
-Application health check fails
-            ↓
-ALB marks target as unhealthy
-            ↓
-Users receive 502 errors
-
+Recently, we had a production incident where users started experiencing 502 errors while accessing the application. We had CloudWatch monitoring configured for our Application Load Balancer, so we received an alert when the ALB 5xx error count crossed the configured threshold.
+I started the investigation from the ALB because that was where the alert originated. I checked the ALB metrics and the target group health status and found that the backend EC2 targets were unhealthy.
+I then connected to one of the affected EC2 instances and checked the application containers using Docker. I noticed that the application container was repeatedly restarting.
+I checked the Docker logs and Linux system logs and found OOM-related messages indicating that the application process was being killed because the EC2 instance was running out of memory. I also checked the instance memory metrics and correlated the timing with the incident.
+I then checked the recent deployment history and found that a new application version had been deployed shortly before the issue started. The new version had higher memory consumption compared to the previous stable version. Because traffic had increased, the EC2 instance didn't have enough available memory, which caused the container to crash repeatedly. As a result, the ALB health checks failed, the targets became unhealthy, and users started receiving 502 errors.
+Since this was a production outage, my first priority was to restore the service. Our application was deployed using Docker containers, and the Docker images were versioned and stored in Amazon ECR. The problematic version was 1.5.0****, while 1.4.0 was the previous known-good version.
+We had the image version parameterized in our Jenkins CI/CD pipeline. So rather than manually changing the Docker image on the EC2 instance, I triggered the deployment pipeline with the previous stable image tag, 1.4.0****.
+The ECR repository itself remained the same. We were only changing the image tag that the deployment referenced. Jenkins pulled the existing 1.4.0 image from ECR and deployed it to the EC2 instance, replacing the container running 1.5.0****. There was no need to rebuild the Docker image because the known-good 1.4.0 image was already available in ECR.
+After the rollback, I verified the Docker container status and application logs and checked the application's health endpoint. I then monitored the ALB target group. Once the health checks started passing and the targets became healthy, traffic started flowing normally and the 502 errors stopped.
+After service was restored, we performed the root-cause analysis. We confirmed that the new application version had increased memory consumption and that the EC2 instance didn't have sufficient memory capacity for the workload.
+As preventive measures, we increased the memory capacity of the EC2 instances and reviewed the application's memory requirements. We also improved monitoring by configuring the CloudWatch Agent for OS-level memory metrics and adding alerts for high memory utilization, unhealthy targets, and container restarts. We also reviewed the Auto Scaling configuration to make sure sufficient capacity could be provisioned during traffic spikes.
+So, the root cause was increased memory consumption introduced by the new application version combined with insufficient EC2 memory capacity. The immediate impact was container crashes, which caused the ALB health checks to fail and resulted in 502 errors for users.
 ## 3.How did you reduce infrastructure cost in your project?
 
 **Answer:**
