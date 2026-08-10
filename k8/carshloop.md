@@ -33,38 +33,4 @@ Finally, I would restart or redeploy the pod and verify that it reaches Running 
 
 
 
-Name:             payment-api-7d8f6c9b7d-xk92m
-Namespace:        payments
-Node:             worker-node-02/10.0.2.15
 
-Status:           Running
-IP:               10.244.2.18
-
-Containers:
-  payment-api:
-    Image:          123456789012.dkr.ecr.ap-south-1.amazonaws.com/payment-api:v1.8.2
-    Port:           8080/TCP
-    State:          Waiting
-      Reason:       CrashLoopBackOff
-    Last State:     Terminated
-      Reason:       Error
-      Exit Code:    1
-      Started:      Mon, 10 Aug 2026 19:35:41 +0530
-      Finished:     Mon, 10 Aug 2026 19:35:43 +0530
-    Restart Count:  7
-
-    Limits:
-      cpu:     500m
-      memory:  512Mi
-
-    Requests:
-      cpu:     250m
-      memory:  256Mi
-
-Events:
-  Type     Reason     Age                  From     Message
-  ----     ------     ----                 ----     -------
-  Normal   Pulled     12m                  kubelet  Successfully pulled image
-  Normal   Created    12m                  kubelet  Created container payment-api
-  Normal   Started    12m                  kubelet  Started container payment-api
-  Warning  BackOff    1m                   kubelet  Back-off restarting failed container payment-api
