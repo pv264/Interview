@@ -23,7 +23,7 @@ Since an API key is normally stored in a Kubernetes Secret, I checked the Secret
 
 payment-api-secret
 
-I would then describe the Secret to verify whether the expected key, PAYMENT_API_KEY, exists.
+I would then describe the Secret to verify whether the expected key, PAYMENT_API_KEY, exists..
 
 If the key exists, I would check whether the Deployment is referencing the correct Secret and key name.
 
