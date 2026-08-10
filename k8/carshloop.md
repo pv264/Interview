@@ -41,5 +41,20 @@ Finally, I would restart or redeploy the pod and verify that it reaches Running 
 
 
 
+# Interview-Ready Exit Code 126 Example
+
+> **"We had a Kubernetes deployment where one of the pods went into `CrashLoopBackOff`. I started by checking the pod using `kubectl describe pod` and noticed that the container was terminating with exit code 126.**
+>
+> **I know exit code 126 generally means that the command was found but could not be executed, so I checked the container logs. The logs showed `permission denied` while trying to execute the application's `entrypoint.sh` script.**
+>
+> **I then checked the Deployment configuration and noticed that the container was running with a non-root user through the `securityContext`. The application had previously been running as root, so I suspected a file-permission or ownership issue.**
+>
+> **I then checked the Dockerfile and found that the `entrypoint.sh` script was owned by root and didn't have execute permissions for the user running the container.**
+>
+> **I fixed the Dockerfile by ensuring the script had the correct ownership and execute permissions, for example using `chmod +x` and `chown` for the application user. I rebuilt the Docker image, pushed the new image to the registry, and redeployed the application.**
+>
+> **After the deployment, I verified that the pod reached `Running` state, the restart count stopped increasing, and the application logs showed successful startup."**
+
+
 
 
