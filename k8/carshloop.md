@@ -32,5 +32,14 @@ If it doesn't exist, I would work with the application/configuration owner to ad
 Finally, I would restart or redeploy the pod and verify that it reaches Running state and that the restart count stops increasing.
 
 
+| Exit code | Remember it as                   |
+| --------- | -------------------------------- |
+| **1**     | Application error                |
+| **126**   | Command exists but can't execute |
+| **127**   | Command not found                |
+| **137**   | SIGKILL — investigate OOMKilled  |
+
+
+
 
 
