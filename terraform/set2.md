@@ -121,7 +121,7 @@ In our Terraform configurations, we strictly avoid hardcoding sensitive informat
 
 During deployment, Terraform dynamically retrieves and injects these values without exposing them within the version-controlled codebase.
 
----
+
 
 ## The Workflow
 
@@ -129,14 +129,14 @@ During deployment, Terraform dynamically retrieves and injects these values with
 2. **Just-in-Time Retrieval:** Terraform uses a data source to fetch the plaintext value during the `plan` or `apply` phase.
 3. **Dynamic Injection:** The retrieved value is referenced directly in the resources that require it.
 
----
+
 
 ## Terraform Implementation Example
 
 ### 1. Retrieve the Secret via Data Source
 To securely fetch the secret at deployment time, use the `aws_ssm_parameter` data source and ensure `with_decryption` is set to `true`.
 
-```hcl
+
 data "aws_ssm_parameter" "database_password" {
   name            = "/prod/database/password"
   with_decryption = true
