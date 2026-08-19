@@ -57,21 +57,7 @@ We can then:
 If a condition like **high CPU usage** is met, Prometheus sends the alert to **Alertmanager**, which forwards notifications to channels such as **Slack**, **email**, or **PagerDuty**.
 
 
-# How does Prometheus collect metrics?
-
-Prometheus uses a **pull-based model** to collect metrics.
-
-Applications expose metrics through an HTTP endpoint, usually **`/metrics`**, using Prometheus client libraries or exporters.
-
-Prometheus discovers these targets through static configuration or service discovery, such as **Kubernetes** or **EC2**, and periodically scrapes the endpoint, typically every **15 seconds**.
-
-The collected metrics are stored in Prometheus's **time-series database (TSDB)** with timestamps and labels.
-
-We can then:
-
-- Query the metrics using **PromQL**.
-- Visualize them in **Grafana**.
-- Define alert rules that send notifications through **Alertmanager** if specific conditions are met.
+.
 ## 2. Explain about p50, p95, and p99 latency percentiles
 
 **Answer:**
