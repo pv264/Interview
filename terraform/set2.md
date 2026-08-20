@@ -1,19 +1,32 @@
 ## 1. How do I ensure that RDS is deployed in the correct VPC when using modules?
 
 **Answer:**
-When using modules, I create the **VPC** in a dedicated module and expose the **VPC ID** and **subnet IDs** as **outputs**. 
+# Terraform Modules: VPC and RDS Dependency
 
-In the **root module**, I pass these outputs into the **RDS module** as **input variables**. Inside the **RDS module**, I use the provided **VPC ID** for **security groups** and **subnet IDs** for the **DB subnet group**, ensuring that **RDS** is deployed in the correct **VPC**.
+When I'm using Terraform modules, I want to avoid hardcoding the VPC ID inside my RDS module because the VPC ID is dynamically generated when Terraform creates the VPC.
 
+So I separate the responsibility between the modules.
 
+My **VPC module** is responsible for creating the VPC, public subnets, and private subnets. Once those resources are created, I expose the **VPC ID** and **private subnet IDs** using Terraform outputs.
 
-### Implementation Workflow:
+Then, in my **root module**, I call both the VPC module and the RDS module. I take the private subnet IDs from the VPC module's output and pass them as an input variable to the RDS module.
 
-1.  **VPC Module:** Define the network and declare `output "vpc_id" { value = aws_vpc.main.id }`.
-2.  **Root Module:** Capture the output: `module.vpc.vpc_id`.
-3.  **RDS Module:** Receive the value via a variable and apply it to the `aws_db_subnet_group` and `aws_security_group`.
+Inside the **RDS module**, I use those private subnet IDs to create an **RDS DB subnet group**. The DB subnet group determines which VPC the RDS instance belongs to because all the subnets in that subnet group must belong to the same VPC.
 
-> **Senior Signal:** This is the standard "Dependency Injection" pattern in **Terraform**. By passing IDs between modules rather than hardcoding them, you ensure that your infrastructure is modular, reusable, and that **RDS** always resides within the specific network boundaries defined by your **VPC module**.
+## Flow
+
+**VPC module creates VPC → VPC module creates private subnets → outputs expose subnet IDs → root module passes those IDs to RDS module → RDS module creates DB subnet group → RDS is deployed using that subnet group.**
+
+This gives me a clear dependency between the modules. Terraform understands that the RDS module depends on the subnet IDs produced by the VPC module, so it creates the networking resources first and then creates the RDS resources.
+
+This approach also makes the Terraform code reusable. If I deploy the same configuration in another environment, such as **QA or Production**, I don't have to change any hardcoded VPC IDs. Terraform creates the appropriate VPC and subnets and automatically passes the correct IDs to the RDS module.
+
+## If the interviewer asks: "But where is the VPC ID actually used?"
+
+I would explain:
+
+> **"The RDS resource itself doesn't require me to directly specify a `vpc_id`. Instead, RDS uses a DB subnet group. The DB subnet group contains the private subnet IDs. Since those subnets were created inside my intended VPC, the subnet group is associated with that VPC, and the RDS instance is therefore placed in that VPC."**
+
 
 ## 2. Difference Between `terraform plan` and `terraform plan -refresh-only`
 
