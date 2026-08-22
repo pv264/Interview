@@ -167,7 +167,7 @@ For example, I can use the same **Terraform code** to create an **EC2 instance**
 
  ## 10 What are Functions in Terraform?
 
-Terraform functions are built-in functions used to manipulate and transform data within Terraform configurations. They help perform operations such as string manipulation, list and map processing, mathematical calculations, file handling, networking calculations, and data formatting. Functions make Terraform code more dynamic, reusable, and easier to maintain. Some commonly used functions include `length()`, `lookup()`, `merge()`, `join()`, `split()`, `cidrsubnet()`, `format()`, and `file()`. In real projects, they're often used to generate resource names, calculate subnet CIDRs, merge tags, read configuration files, and dynamically configure infrastructure.
+Terraform functions are built-in functions used to manipulate data within Terraform configurations. They help perform operations such as string manipulation, list and map processing.Functions make Terraform code more dynamic, reusable, and easier to maintain. Some commonly used functions include `length()`, `lookup()`, `merge()`,. In real projects, they're often used to generate resource names, calculate subnet CIDRs, merge tags, read configuration files, and dynamically configure infrastructure.
 
 Suppose we want one subnet in each Availability Zone. Instead of writing three subnet resources manually:
 *   Subnet-A
