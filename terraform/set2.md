@@ -174,20 +174,21 @@ Suppose we want one subnet in each Availability Zone. Instead of writing three s
 *   Subnet-B
 *   Subnet-C
 
-We use `count`.
-
-```hcl
-variable "public_subnets" {
-  default = [
-    "10.0.1.0/24",
-    "10.0.2.0/24",
-    "10.0.3.0/24"
-  ]
+We can use Terraform's cidrsubnet() function to automatically calculate the subnet CIDRs from the VPC CIDR.
+variable "vpc_cidr" {
+  default = "10.0.0.0/16"
 }
 
 resource "aws_subnet" "public" {
-  count       = length(var.public_subnets)
-  cidr_block  = var.public_subnets[count.index]
+  count      = 3
+  cidr_block = cidrsubnet(var.vpc_cidr, 8, count.index)
 }
 
-We used the length() function with count so Terraform automatically created one subnet for each CIDR block. If we added another subnet to the list later, Terraform created it automatically without changing the resource definition.
+
+Here, cidrsubnet() divides the VPC CIDR into smaller /24 subnet ranges:
+
+VPC: 10.0.0.0/16
+
+Subnet-A → 10.0.0.0/24
+Subnet-B → 10.0.1.0/24
+Subnet-C → 10.0.2.0/24
