@@ -169,26 +169,66 @@ For example, I can use the same **Terraform code** to create an **EC2 instance**
 
 Terraform functions are built-in functions used to manipulate data within Terraform configurations. They help perform operations such as string manipulation, list and map processing.Functions make Terraform code more dynamic, reusable, and easier to maintain. Some commonly used functions include `length()`, `lookup()`, `merge()`,. In real projects, they're often used to generate resource names, calculate subnet CIDRs, merge tags, read configuration files, and dynamically configure infrastructure.
 
-Suppose we want one subnet in each Availability Zone. Instead of writing three subnet resources manually:
-*   Subnet-A
-*   Subnet-B
-*   Subnet-C
+## Creating Subnets Using `cidrsubnet()`
 
-We can use Terraform's cidrsubnet() function to automatically calculate the subnet CIDRs from the VPC CIDR.
+Suppose we want one subnet in each Availability Zone. Instead of writing three subnet resources manually:
+
+- Subnet-A
+- Subnet-B
+- Subnet-C
+
+We can use Terraform's `cidrsubnet()` function to automatically calculate the subnet CIDRs from the VPC CIDR.
+
+```hcl
 variable "vpc_cidr" {
   default = "10.0.0.0/16"
 }
 
 resource "aws_subnet" "public" {
-  count      = 3
-  cidr_block = cidrsubnet(var.vpc_cidr, 8, count.index)
+  count = 3
+
+  cidr_block = cidrsubnet(
+    var.vpc_cidr,
+    8,
+    count.index
+  )
 }
+```
 
+Here, `cidrsubnet()` divides the VPC CIDR into smaller `/24` subnet ranges.
 
-Here, cidrsubnet() divides the VPC CIDR into smaller /24 subnet ranges:
-
+```text
 VPC: 10.0.0.0/16
 
 Subnet-A → 10.0.0.0/24
 Subnet-B → 10.0.1.0/24
 Subnet-C → 10.0.2.0/24
+```
+
+The `count.index` value changes for each subnet:
+
+```text
+count.index = 0 → 10.0.0.0/24
+count.index = 1 → 10.0.1.0/24
+count.index = 2 → 10.0.2.0/24
+```
+
+If we change:
+
+```hcl
+count = 3
+```
+
+to:
+
+```hcl
+count = 4
+```
+
+Terraform automatically creates another subnet:
+
+```text
+Subnet-D → 10.0.3.0/24
+```
+
+This allows us to create multiple non-overlapping subnets without manually specifying every CIDR block.
