@@ -12,3 +12,53 @@ I enforce branch protection rules on the `main` branch using GitHub repository s
 - **Disable force pushes** to `main` to prevent anyone from rewriting the branch history.
 
 This ensures that only **reviewed, tested, and approved code** is merged into the `main` branch.
+
+
+# Git Merge vs Rebase
+
+Git **merge** and **rebase** are both used to bring changes from one branch into another, but they handle the Git history differently.
+
+## Merge
+
+**Merge** combines the two branches and preserves their existing history. It may create a merge commit.
+
+For example:
+
+```text
+main:     A---B---C
+               \
+feature:        D---E
+```
+
+If I merge `main` into `feature`, the history becomes:
+
+```text
+A---B---C
+     \   \
+      D---E---M
+```
+
+I would use **merge** when working with shared branches or when I want to preserve the complete history of how the branches were developed.
+
+## Rebase
+
+**Rebase** takes the commits from my feature branch and replays them on top of the latest `main` branch. This gives a cleaner, linear history.
+
+For example:
+
+```text
+main:     A---B---C
+               \
+feature:        D---E
+```
+
+After rebasing the feature branch:
+
+```text
+A---B---C---D'---E'
+```
+
+Here, `D'` and `E'` are recreated commits based on the latest `main`.
+
+I generally use **rebase on my own feature branch** to bring in the latest changes from `main` and keep the history clean. I use **merge for shared branches** when preserving the existing history is more important.
+
