@@ -119,12 +119,24 @@ Combine **AWS CloudWatch** and **AWS Lambda**:
 ### Scenario: Onboarding a New Developer (EC2 Access)
 
 **Answer:**
-When a new developer joins, follow these steps to ensure **least privilege** and security:
+When a new developer joins, we follow these steps to provide **secure access while maintaining least privilege**:
 
-1. **Step 1:** Create an **IAM user** specifically for the developer.
-2. **Step 2:** Generate a unique **SSH key pair**.
-3. **Step 3:** Login to **EC2** as an existing admin.
-4. **Step 4:** Create a dedicated **Linux user** on the instance.
-5. **Step 5:** Configure **SSH key access** (uploading the public key to `authorized_keys`).
+1. **Step 1: Create an IAM user specifically for the developer**
 
-> **Senior Signal:** This approach avoids **shared credentials**. If the developer leaves, you can simply delete their **IAM user** and remove their **Linux user** without affecting anyone else's access.
+   We first create an IAM identity for the developer so they can access AWS resources based on the permissions assigned to them.
+
+2. **Step 2: Generate a unique SSH key pair**
+
+   We generate a unique SSH key pair for the developer. The **private key** stays securely with the developer, and the **public key** will be configured on the EC2 server.
+
+3. **Step 3: Login to EC2 as an existing admin**
+
+   A DevOps engineer or existing administrator who already has access logs into the EC2 server. We use this administrative access to set up the new developer's access.
+
+4. **Step 4: Create a dedicated Linux user on the instance**
+
+   We create a separate Linux user for the developer instead of giving them access through an existing or shared account. This gives each developer an individual identity on the server.
+
+5. **Step 5: Configure SSH key access**
+
+   We add the developer's **public SSH key** to the new Linux user's `authorized_keys` file. After this, the developer can connect to the EC2 server using their own private key.
