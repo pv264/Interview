@@ -31,19 +31,54 @@ I would also verify whether:
 
 ## 2. How do you integrate SonarQube with Jenkins in a CI/CD pipeline?
 
-**Answer:**
-We integrate **SonarQube** with **Jenkins** to perform automated code quality and security analysis during the CI/CD pipeline. 
+**Answer# SonarQube and Jenkins Integration Workflow
 
-### Integration Workflow:
+We integrate **SonarQube** with **Jenkins** to perform automated code quality and security analysis during the CI/CD pipeline.
 
-1. **Install and Configure:** First, we install the **SonarQube Scanner plugin** in Jenkins and configure the SonarQube server URL and authentication token under Jenkins global configuration.
-2. **Add Pipeline Stage:** Then we configure the Sonar scanner tool and add a dedicated SonarQube analysis stage in the Jenkins pipeline using Maven, Gradle, or the `sonar-scanner` command depending on the application type.
-3. **Execute Analysis:** During pipeline execution, Jenkins sends the source code to SonarQube for analysis, where it checks for bugs, vulnerabilities, code smells, duplicated code, and code coverage.
-4. **Enforce Quality Gate:** We also configure a **Quality Gate** in SonarQube, and Jenkins waits for the Quality Gate result before proceeding further. 
+### Integration Workflow
 
-If the **Quality Gate** fails, the pipeline automatically stops, preventing low-quality or vulnerable code from being deployed to higher environments.
+1. **Install and Configure**
 
-> **Senior Signal:** When configuring the Quality Gate step in a Jenkinsfile, it is a best practice to use the `waitForQualityGate()` step combined with a **SonarQube webhook** pointing back to Jenkins. This allows the Jenkins pipeline to pause asynchronously without consuming an executor node thread while waiting for the SonarQube server to finish processing the analysis report.
+   * Install the **SonarQube Scanner for Jenkins** plugin.
+   * Configure the SonarQube server URL and authentication token in Jenkins global configuration.
+   * Store the authentication token securely in **Jenkins Credentials**.
+
+2. **Configure Scanner and Pipeline**
+
+   * Configure the required SonarQube scanner/tool.
+   * Add a dedicated SonarQube analysis stage in the Jenkins pipeline.
+   * Use **Maven, Gradle, or `sonar-scanner`**, depending on the application.
+
+3. **Execute Analysis**
+
+   * During pipeline execution, Jenkins invokes the **SonarQube Scanner**.
+   * The scanner analyzes the source code for:
+
+     * Bugs
+     * Vulnerabilities
+     * Code smells
+     * Duplicated code
+     * Code coverage
+   * The analysis report is sent to the SonarQube server.
+
+4. **Enforce Quality Gate**
+
+   * Configure a **Quality Gate** in SonarQube with conditions such as:
+
+     * Minimum code coverage
+     * Zero critical vulnerabilities
+   * Jenkins waits for the Quality Gate result using `waitForQualityGate`.
+   * A **SonarQube webhook** notifies Jenkins when the analysis is complete.
+
+5. **Continue or Stop Pipeline**
+
+   * If the **Quality Gate passes**, Jenkins continues with subsequent stages such as:
+
+     * Docker image build
+     * Docker image push
+     * Deployment
+   * If the **Quality Gate fails**, Jenkins can stop the pipeline, preventing code that doesn't meet the defined quality standards from being deployed to higher environments.
+:**
 
 ## 2 How do you integrate Jenkins with Kubernetes?
 
