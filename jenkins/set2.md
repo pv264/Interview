@@ -121,3 +121,11 @@ Here is how the authentication and push process works step-by-step:
 4. **Build & Push:** Jenkins builds the Docker image, tags it with the specific ECR repository URI, and finally pushes it to Amazon ECR.
 
 > **Senior Signal:** Highlighting that this approach eliminates the need to store long-lived AWS Access Keys inside Jenkins is a major security win. To take this answer to the next level in an interview, mention that you enforce **IMDSv2** on the Jenkins EC2 instance. IMDSv2 requires session tokens for metadata retrieval, which protects the instance against SSRF (Server-Side Request Forgery) attacks that could otherwise be used to steal the temporary IAM credentials.
+
+## 3. When do you choose jenkins and when do you choose github actions for cicd?
+I choose **Jenkins** when the organization already has Jenkins in place, has many existing pipelines and integrations, or requires a high level of customization and control over the CI/CD infrastructure.
+
+I choose **GitHub Actions** when the source code is hosted on GitHub and we want a simple, GitHub-integrated CI/CD solution with less infrastructure and maintenance overhead.
+
+For a **new project hosted on GitHub**, I would generally prefer GitHub Actions because it is easy to set up and integrates directly with the repository. However, if the organization already has a mature Jenkins environment, I would continue using Jenkins instead of introducing another CI/CD tool unless there is a specific reason to migrate.
+
