@@ -89,3 +89,15 @@ I prefer writing simple, reliable scripts that improve response time and consist
 3.  Helping others recover and optimize their environments."
 
 > **Senior Signal:** This answer reframes the role from "fixing tickets" to "solving complex engineering challenges," showing you value the *depth* of the problem over the title of the role.
+
+
+
+## Apart from my technical skills, I believe one of my biggest strengths is my ownership and learning attitude. When I take responsibility for something, I don't just complete the assigned task; I try to understand the requirement, identify potential issues, and make sure the work is completed properly.
+
+## I'm also comfortable working in a team. I communicate clearly with developers and other stakeholders, especially when there is an issue or dependency. I don't hesitate to ask questions when something is unclear, and at the same time, I try to find solutions independently before approaching someone.
+
+## Another strength is that I'm adaptable. Technology and project requirements keep changing, so I’m comfortable learning new concepts and adjusting to different situations.
+
+## I would also say I'm dependable. If I commit to a task, I take responsibility for delivering it and keeping the team informed about the progress or any blockers.
+
+## So, apart from my technical skills, I bring ownership, teamwork, accountability, adaptability, and a continuous-learning mindset. I believe these qualities would help me contribute positively to the team and grow with the organization.”
