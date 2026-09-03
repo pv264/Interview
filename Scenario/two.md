@@ -49,3 +49,7 @@ When an EC2 instance suddenly becomes unresponsive, I follow a structured, step-
 ## 6. Remediation & Prevention
 * **Recovery:** Resolve the immediate root cause (e.g., restart services, clear disk space, reboot instance) to minimize downtime.
 * **Prevention:** Implement long-term guards such as CloudWatch alarms, auto-recovery actions, Auto Scaling Groups, and automated health checks to prevent recurring issues.
+### How do you decide how much CPU and memory an application needs?
+
+> I don't determine CPU and memory purely by estimation. I start by understanding the application's workload, expected traffic, concurrency, and whether it is CPU or memory intensive. I initially allocate reasonable resources and deploy it in a lower environment. Then I perform load testing with realistic traffic and monitor CPU, memory, response time, and error rates using tools such as CloudWatch or Prometheus/Grafana. I size the application based on peak usage rather than just average usage and keep some headroom for traffic spikes. After production deployment, I continue monitoring and tune the resources or configure horizontal scaling based on the observed workload.
+
