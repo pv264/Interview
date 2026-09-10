@@ -129,3 +129,10 @@ I choose **GitHub Actions** when the source code is hosted on GitHub and we want
 
 For a **new project hosted on GitHub**, I would generally prefer GitHub Actions because it is easy to set up and integrates directly with the repository. However, if the organization already has a mature Jenkins environment, I would continue using Jenkins instead of introducing another CI/CD tool unless there is a specific reason to migrate.
 
+
+## 4 Jenkins builds fail only on specific agents. How do you debug?
+
+"If a Jenkins build fails only on specific agents, I first compare the failing agent with a known-good agent because that indicates an environment-specific problem. I check the Jenkins console logs and agent logs, then validate Java and build-tool versions, environment variables, disk and memory utilization, workspace permissions, Docker configuration, and network connectivity.
+
+I also check whether the Jenkins user can execute the required commands and access the required resources. If the pipeline uses external repositories or container registries, I test connectivity directly from the failing agent. Finally, I reproduce the failing build command manually on the agent and compare it with a working agent. Once I identify the difference, I fix the agent configuration or replace/rebuild the agent if it's an inconsistent or corrupted node."
+
