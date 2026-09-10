@@ -71,3 +71,43 @@ A **Reverse Proxy** sits between the client and backend servers, handling **inbo
 
 * **Role:** Acts on behalf of the server.
 * **Function:** Load balancing, SSL termination, caching, and hiding server topology.
+
+
+# 3 How do you ensure IPs don't overlap across subnets?
+
+We prevent IP overlap primarily through **proper CIDR planning and IP address management**. Before creating the network, I define the CIDR range for the VPC or VNet and divide it into smaller, **non-overlapping CIDR blocks** for different subnets.
+
+For example, if I have a VPC with **`10.0.0.0/16`**, I might allocate:
+
+* Public Subnet 1 → **`10.0.1.0/24`**
+* Public Subnet 2 → **`10.0.2.0/24`**
+* Private Subnet 1 → **`10.0.10.0/24`**
+* Private Subnet 2 → **`10.0.11.0/24`**
+
+Since these CIDR ranges are distinct, the IP addresses cannot overlap.
+
+I also consider the CIDR ranges of networks that need to communicate with my VPC, such as:
+
+* On-premises networks
+* VPN-connected networks
+* Other VPCs
+* VPC peering or Transit Gateway networks
+
+These networks must also have **non-overlapping CIDRs**; otherwise, routing can become ambiguous and communication can fail.
+
+From an automation perspective, I prefer managing the CIDR allocation through **Terraform** and using functions such as **`cidrsubnet()`** to derive subnet ranges systematically instead of manually assigning them.
+
+We can also add validation or use an IPAM solution such as **AWS VPC IPAM** for centralized IP address management across multiple VPCs and accounts.
+
+## Overall Approach
+
+The overall approach is:
+
+1. **Plan the IP address space**
+2. **Allocate unique CIDRs hierarchically**
+3. **Validate CIDRs against existing networks**
+4. **Manage CIDR allocation through Terraform/IaC**
+5. **Use centralized IPAM for larger environments**
+
+This ensures that we don't have **overlapping subnet ranges** as the environment grows.
+
