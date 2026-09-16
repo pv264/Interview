@@ -152,3 +152,6 @@ Using an ALB provides significant architectural benefits:
 ## Why Alias instead of CNAME?
 
 For AWS resources like an Application Load Balancer, we use an Alias A record because it can point both the root domain (example.com) and subdomains to the ALB. The ALB's IP addresses can change over time, but the Alias record automatically follows those changes. That means we don't have to update DNS whenever the ALB's underlying IP addresses change."
+
+## what is an ssl-certificate
+An SSL certificate is a digital certificate used by TLS to secure HTTPS communication. It verifies the identity of the server and enables encrypted communication between the client and server. The certificate contains the server's public key and is issued by a trusted Certificate Authority. The corresponding private key is securely maintained by the server.
