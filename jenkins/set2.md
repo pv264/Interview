@@ -136,3 +136,13 @@ For a **new project hosted on GitHub**, I would generally prefer GitHub Actions 
 
 I also check whether the Jenkins user can execute the required commands and access the required resources. If the pipeline uses external repositories or container registries, I test connectivity directly from the failing agent. Finally, I reproduce the failing build command manually on the agent and compare it with a working agent. Once I identify the difference, I fix the agent configuration or replace/rebuild the agent if it's an inconsistent or corrupted node."
 
+## 5 How do you design a Jenkins pipeline from scratch?
+
+**First, I understand the application, source-control strategy, build process, deployment target, environments, and security requirements. Then I design the pipeline into stages such as checkout, build, unit testing, code-quality analysis, security scanning, Docker image creation, image scanning, artifact publishing, and deployment.**
+
+**I configure Jenkins agents with the required tools and avoid running builds on the controller. For credentials, I use Jenkins Credentials or preferably IAM roles/workload identity instead of hardcoding secrets. I also define environment-specific configuration separately for dev, QA, UAT, and production.**
+
+**For containerized applications running on Kubernetes, I typically build the image, scan it with Trivy, push it to ECR, and then deploy using Helm or a GitOps tool such as ArgoCD. For production, I include approval gates, health checks, smoke tests, rollback mechanisms, notifications, and proper logging.**
+
+**Finally, I make sure every deployment is traceable to a Git commit and immutable image version, so we know exactly what version is running in each environment.**
+
