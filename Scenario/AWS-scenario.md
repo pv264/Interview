@@ -140,3 +140,236 @@ When a new developer joins, we follow these steps to provide **secure access whi
 5. **Step 5: Configure SSH key access**
 
    We add the developer's **public SSH key** to the new Linux user's `authorized_keys` file. After this, the developer can connect to the EC2 server using their own private key.
+
+
+   # AWS Cross-Account Communication Using AssumeRole
+
+For cross-account communication, I use **AWS STS AssumeRole**.
+
+Suppose **Account A** needs to access resources in **Account B**. I establish the cross-account access using an IAM role in Account B and AWS STS.
+
+## Step-by-Step Process
+
+### 1. Create an IAM Role in Account B
+
+First, I create an IAM role in **Account B**, for example:
+
+```text
+CrossAccountAccessRole
+```
+
+I attach the required permissions to this role.
+
+For example, if Account A needs to read objects from an S3 bucket in Account B, I attach permissions such as:
+
+```json
+{
+  "Effect": "Allow",
+  "Action": [
+    "s3:GetObject",
+    "s3:ListBucket"
+  ],
+  "Resource": [
+    "arn:aws:s3:::my-bucket",
+    "arn:aws:s3:::my-bucket/*"
+  ]
+}
+```
+
+This permissions policy defines **what the assumed role is allowed to do**.
+
+---
+
+### 2. Configure the Trust Policy in Account B
+
+Next, I configure the **trust policy** of the role in Account B.
+
+The trust policy specifies **who is allowed to assume the role**.
+
+For example:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::ACCOUNT_A_ID:role/AppRole"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+```
+
+Here, the role `AppRole` from Account A is trusted to assume `CrossAccountAccessRole` in Account B.
+
+> **Trust policy:** Defines **who can assume the role**.
+
+---
+
+### 3. Give Account A Permission to Assume the Role
+
+On the **Account A** side, the source IAM role also needs permission to call `sts:AssumeRole`.
+
+For example:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "sts:AssumeRole",
+      "Resource": "arn:aws:iam::ACCOUNT_B_ID:role/CrossAccountAccessRole"
+    }
+  ]
+}
+```
+
+This allows `AppRole` in Account A to assume the role in Account B.
+
+---
+
+### 4. Application Calls AWS STS
+
+When the application in Account A needs to access a resource in Account B, it calls:
+
+```bash
+aws sts assume-role \
+  --role-arn arn:aws:iam::ACCOUNT_B_ID:role/CrossAccountAccessRole \
+  --role-session-name AccountAToAccountB
+```
+
+AWS STS validates:
+
+1. Whether the source role in Account A has permission to call `sts:AssumeRole`.
+2. Whether the target role in Account B trusts the source role.
+3. Whether any additional IAM conditions or restrictions allow the request.
+
+If the checks are successful, STS returns **temporary security credentials**.
+
+---
+
+### 5. STS Provides Temporary Credentials
+
+STS returns temporary credentials such as:
+
+```text
+AccessKeyId
+SecretAccessKey
+SessionToken
+Expiration
+```
+
+The application uses these temporary credentials to make AWS API calls against resources in Account B.
+
+---
+
+### 6. Access Resources in Account B
+
+The application can now access Account B resources according to the permissions attached to the assumed role.
+
+For example:
+
+```text
+Account A
+    |
+    | AppRole
+    |
+    | sts:AssumeRole
+    ↓
+AWS STS
+    |
+    | Temporary Credentials
+    ↓
+Account B
+    |
+    | CrossAccountAccessRole
+    |
+    ↓
+S3 / EC2 / EKS / Other AWS Resources
+```
+
+---
+
+## Two Important IAM Checks
+
+Cross-account AssumeRole requires permission on the source side and trust on the target side.
+
+### Account A — Permission Policy
+
+The source role must have:
+
+```text
+sts:AssumeRole
+```
+
+on the target role.
+
+### Account B — Trust Policy
+
+The target role must trust the principal from Account A.
+
+```text
+Account A Principal
+        |
+        | sts:AssumeRole
+        ↓
+Account B Role
+        |
+        | Resource Permissions
+        ↓
+Account B Resources
+```
+
+---
+
+## Why Use AssumeRole?
+
+Using AssumeRole is preferable to sharing long-lived access keys between AWS accounts because it provides:
+
+* **Temporary credentials**
+* **Least-privilege access**
+* **No need to share permanent access keys**
+* **Centralized permission management**
+* **Better security**
+* **CloudTrail auditability**
+
+---
+
+## Interview-Ready Answer
+
+> **For cross-account communication, I use AWS STS AssumeRole. Suppose Account A needs to access resources in Account B. First, I create an IAM role in Account B with the required permissions, such as S3 read access. In the role's trust policy, I specify the IAM role or principal from Account A that is allowed to assume it.**
+>
+> **On the Account A side, I provide permission to call `sts:AssumeRole` on the target role in Account B. The application or user in Account A then calls STS AssumeRole and receives temporary security credentials. It uses those temporary credentials to access the resources in Account B according to the permissions attached to the assumed role.**
+>
+> **This approach avoids sharing long-lived access keys between accounts and provides secure, temporary, and least-privilege access.**
+
+## Quick Memory Trick
+
+```text
+Account A
+   |
+   | Permission to AssumeRole
+   | sts:AssumeRole
+   ↓
+Account B Role
+   |
+   | Trust Policy
+   | "I trust Account A"
+   ↓
+Temporary Credentials
+   |
+   ↓
+Account B Resources
+```
+
+**Remember:**
+
+* **Account A → Permission to assume**
+* **Account B → Trust the source + define resource permissions**
+* **STS → Provides temporary credentials**
+* **Temporary credentials → Used to access Account B resources**
+
