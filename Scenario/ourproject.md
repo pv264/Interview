@@ -193,3 +193,57 @@ After implementing the changes:
 Successfully implemented a **secure, keyless authentication mechanism** between **AWS and Google Cloud** using **Workload Identity Federation (WIF)**.
 
 This solution enables Jenkins running on AWS EC2 to securely deploy to GKE using **temporary credentials** obtained through Workload Identity Federation, eliminating the need to store or manage long-lived Google Cloud service account keys.
+
+
+# LLM Application Auto Scaling Design
+
+For our LLM application, the requirement was to support approximately **180–200 requests every 10 seconds** during peak traffic. We first performed **load testing** to understand how many requests our infrastructure could handle at each capacity level.
+
+Our application had two main layers:
+
+- **Haystack** – handled request orchestration.
+- **vLLM** – handled GPU-based LLM inference.
+
+Since these two layers have different resource requirements, we created **separate Auto Scaling Groups (ASGs)**.
+
+## ASG Configuration
+
+### Haystack
+
+- Minimum: **2 instances**
+- Maximum: **4 instances**
+- Instance type: **C7i.4xlarge**
+
+### vLLM
+
+- Minimum: **1 instance**
+- Maximum: **2 instances**
+- Instance type: **G6e.12xlarge**
+
+## Load Testing Results
+
+During testing, we observed the following capacity levels:
+
+| Haystack | vLLM | Approximate Capacity |
+|----------|------|----------------------|
+| 2 | 1 | ~60 requests / 10 sec |
+| 3 | 2 | ~150 requests / 10 sec |
+| 4 | 2 | ~180–200 requests / 10 sec |
+
+At the maximum configuration of **4 Haystack instances and 2 vLLM instances**, we achieved approximately **180–200 requests per 10 seconds**, which matched our peak workload requirement.
+
+## Autoscaling Metric
+
+For autoscaling, we used the ALB **`RequestCountPerTarget`** CloudWatch metric instead of CPU utilization.
+
+An important point is that this metric is evaluated over the configured **CloudWatch period**, typically **1 minute**. Therefore, we converted our application traffic requirement into requests per minute and then into requests per target.
+
+For example:
+
+- Requirement: **180 requests / 10 seconds**
+- Equivalent: `180 × 6 = 1,080 requests / minute`
+- If there are **6 targets**, then:
+
+```text
+1,080 requests / minute ÷ 6 targets
+= 180 requests / target / minute
