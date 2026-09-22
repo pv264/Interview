@@ -195,55 +195,22 @@ Successfully implemented a **secure, keyless authentication mechanism** between 
 This solution enables Jenkins running on AWS EC2 to securely deploy to GKE using **temporary credentials** obtained through Workload Identity Federation, eliminating the need to store or manage long-lived Google Cloud service account keys.
 
 
-# LLM Application Auto Scaling Design
 
-For our LLM application, the requirement was to support approximately **180–200 requests every 10 seconds** during peak traffic. We first performed **load testing** to understand how many requests our infrastructure could handle at each capacity level.
 
-Our application had two main layers:
+# LLM Application ASG Explanation
 
-- **Haystack** – handled request orchestration.
-- **vLLM** – handled GPU-based LLM inference.
+**For our LLM application, the requirement was to support approximately 180–200 requests every 10 seconds during peak traffic. We first performed load testing to understand how many requests our infrastructure could handle at each capacity level.**
 
-Since these two layers have different resource requirements, we created **separate Auto Scaling Groups (ASGs)**.
+**Our application had two main layers: Haystack, which handled request orchestration, and vLLM, which handled GPU-based LLM inference. Since these two layers have different resource requirements, we created separate Auto Scaling Groups.**
 
-## ASG Configuration
+**For Haystack, we configured a minimum of 2 and maximum of 4 C7i.4xlarge instances. For vLLM, we configured a minimum of 1 and maximum of 2 G6e.12xlarge GPU instances.**
 
-### Haystack
+**During testing, 2 Haystack instances with 1 vLLM instance handled approximately 60 requests per 10 seconds. As traffic increased, we scaled the infrastructure. With 3 Haystack instances and 2 vLLM instances, we handled around 150 requests per 10 seconds. At the maximum configuration of 4 Haystack and 2 vLLM instances, we achieved approximately 180–200 requests per 10 seconds.**
 
-- Minimum: **2 instances**
-- Maximum: **4 instances**
-- Instance type: **C7i.4xlarge**
+**For autoscaling, we used the ALB `RequestCountPerTarget` CloudWatch metric rather than CPU utilization. The important point is that this metric is evaluated over the CloudWatch period, typically one minute. So we converted our application traffic requirement into requests per minute and then into requests per target.**
 
-### vLLM
+**For example, 180 requests per 10 seconds is approximately 1,080 requests per minute. If we have 6 targets, that corresponds to approximately 180 requests per target per minute. We could therefore use a threshold around that level as one of our scaling signals, depending on the number of targets and the alarm configuration.**
 
-- Minimum: **1 instance**
-- Maximum: **2 instances**
-- Instance type: **G6e.12xlarge**
+**We chose request count because CPU wasn't a reliable representation of load in our application. Haystack spends significant time waiting for downstream services such as Milvus and vLLM, so CPU could remain relatively low even when request volume and latency were increasing.**
 
-## Load Testing Results
-
-During testing, we observed the following capacity levels:
-
-| Haystack | vLLM | Approximate Capacity |
-|----------|------|----------------------|
-| 2 | 1 | ~60 requests / 10 sec |
-| 3 | 2 | ~150 requests / 10 sec |
-| 4 | 2 | ~180–200 requests / 10 sec |
-
-At the maximum configuration of **4 Haystack instances and 2 vLLM instances**, we achieved approximately **180–200 requests per 10 seconds**, which matched our peak workload requirement.
-
-## Autoscaling Metric
-
-For autoscaling, we used the ALB **`RequestCountPerTarget`** CloudWatch metric instead of CPU utilization.
-
-An important point is that this metric is evaluated over the configured **CloudWatch period**, typically **1 minute**. Therefore, we converted our application traffic requirement into requests per minute and then into requests per target.
-
-For example:
-
-- Requirement: **180 requests / 10 seconds**
-- Equivalent: `180 × 6 = 1,080 requests / minute`
-- If there are **6 targets**, then:
-
-```text
-1,080 requests / minute ÷ 6 targets
-= 180 requests / target / minute
+**So the overall design was to start with the minimum capacity, monitor actual request demand through ALB, scale the Haystack and vLLM layers independently, and allow the infrastructure to reach the capacity required for the peak workload without keeping expensive GPU instances running unnecessarily.**
