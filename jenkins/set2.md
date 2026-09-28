@@ -82,30 +82,43 @@ We integrate **SonarQube** with **Jenkins** to perform automated code quality an
 
 ## 2 How do you integrate Jenkins with Kubernetes?
 
-**Answer:**
-In our setup, Jenkins communicates with the Kubernetes cluster using a Kubernetes **Service Account** instead of a standard `kubeconfig` file. A Service Account provides a specific identity to Jenkins, and **RBAC (Role-Based Access Control)** determines what actions that identity is allowed to perform.
 
-Here is the step-by-step integration process:
+# Jenkins to Amazon EKS Authentication – Interview Explanation
 
-### 1. Create the Service Account and RBAC Rules
-* **Service Account:** First, we create a Service Account in the Kubernetes cluster (e.g., `jenkins-sa`). 
-* **Role/ClusterRole:** By itself, the Service Account has very limited permissions, so we create a Role (or ClusterRole) with the exact required permissions—such as creating, updating, listing, and deleting Deployments, Pods, and Services.
-* **Binding:** We then bind that Role to the Service Account using a `RoleBinding` or `ClusterRoleBinding`.
+In our setup, Jenkins runs on an EC2 instance and deploys applications to Amazon EKS. For authentication, we use an IAM-based approach instead of storing long-lived Kubernetes tokens or AWS access keys in Jenkins.
 
-### 2. Configure Jenkins Authentication
-Jenkins is then configured to use the credentials associated with that Service Account:
-* **If Jenkins is inside the cluster:** It can use the Service Account directly by having its token automatically mounted to the Jenkins pod.
-* **If Jenkins is outside the cluster:** We extract the Service Account token and use it alongside the Kubernetes API server endpoint to authenticate remotely.
+We attach an IAM role to the EC2 instance through an instance profile. This allows Jenkins to obtain temporary AWS credentials automatically through the EC2 instance metadata service, without requiring us to configure static access keys.
 
-### 3. Pipeline Execution
-When the CI/CD pipeline reaches the deployment stage, Jenkins executes commands like `kubectl apply -f deployment.yaml` or `helm upgrade --install`. The `kubectl` client sends the request to the Kubernetes API Server along with the injected Service Account token.
+During the deployment stage, Jenkins uses the AWS CLI to configure the EKS cluster access. The kubeconfig uses the AWS EKS authentication mechanism to generate a short-lived authentication token whenever `kubectl` needs to communicate with the Kubernetes API server.
 
-### 4. API Server Validation
-* The API Server first **authenticates** the Service Account using the token.
-* It then checks **RBAC** to verify whether that Service Account has permission to perform the requested operation.
-* If the permissions are valid, the API Server accepts the request, stores the desired state in `etcd`, and the scheduler and `kubelet` work together to create or update the Pods on the worker nodes.
+When the request reaches EKS, the API server authenticates the IAM identity. We configure the necessary EKS access permissions and Kubernetes RBAC rules to ensure Jenkins can perform only the required deployment operations within the target namespace.
 
-> **Senior Signal:** Using a dedicated Service Account is considered significantly more secure than giving Jenkins broad `cluster-admin` access. It allows us to strictly enforce the **principle of least privilege**, granting Jenkins only the exact permissions it needs to deploy specific applications.
+Once the request is authorized, Kubernetes processes the deployment and reconciles the desired state.
+
+Regarding token expiry, the EKS authentication token is valid for approximately 15 minutes. We don't manually generate or store a new token for every pipeline. The AWS CLI or authentication plugin generates a fresh token when needed. The underlying AWS credentials are also refreshed automatically through the EC2 instance profile.
+
+From a security perspective, we follow the principle of least privilege, avoid static credentials, restrict Jenkins to the required Kubernetes resources, and keep the deployment process fully automated.
+
+## If the interviewer asks follow-up questions
+
+### Q: What happens when the EKS token expires?
+
+"The AWS CLI or EKS authentication plugin generates a new token when `kubectl` needs to authenticate again, provided the underlying AWS credentials are valid."
+
+### Q: How do you control what Jenkins can deploy?
+
+"We associate the IAM role with the appropriate EKS access permissions and use Kubernetes RBAC where required. We scope permissions to the relevant namespace and resources rather than granting unrestricted cluster-admin access."
+
+### Q: Where do you store the AWS credentials?
+
+"We don't store static AWS access keys in Jenkins. We use an IAM role attached to the EC2 instance, and the AWS SDK or CLI obtains temporary credentials through the instance metadata service."
+
+### Q: Is the EKS token the same as a Kubernetes Service Account token?
+
+"No. In this approach, Jenkins authenticates using an IAM identity through the EKS IAM authentication mechanism. A Kubernetes Service Account token is a different authentication method."
+
+**Important:** This is an interview-ready explanation of the IAM-based EKS approach. Describe it as your implemented setup only if your EC2 instance and Jenkins pipeline are actually configured this way.
+
 
 ## 3 .How does Jenkins running on EC2 authenticate to ECR?
 
