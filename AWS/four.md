@@ -457,3 +457,455 @@ I would confirm that:
 > If the network path is healthy, I would use SSM Session Manager to access the instance and check `systemctl status sshd`, `ss -lntp`, SSH logs, and `sshd -t`. I would also check system resources using `top`, `free`, `df`, `df -i`, `uptime`, and `vmstat`, because disk exhaustion, memory pressure, I/O wait, or process exhaustion can also affect SSH.
 >
 > I would then correlate the incident with recent infrastructure or OS changes. Once I identify the root cause, I would make the minimum required change, restore SSH connectivity, and validate it from the affected users' network. I would avoid simply rebooting the instance because the application is healthy and a reboot could introduce unnecessary risk during a Sev-1 incident."
+
+
+
+
+
+# Auto Scaling Troubleshooting — EC2 Instances Not Launching
+
+## Question
+
+Auto scaling is not working as expected and new instances are not being launched within the required time frame how would you trouble shoot and resolve the issue
+
+---
+
+If Auto Scaling is not working as expected and new EC2 instances are not being launched within the required time, I would first determine **where the scaling process is breaking**.
+
+The flow I would troubleshoot is:
+
+**CloudWatch metric → Alarm → Scaling policy → ASG desired capacity → Launch request → EC2 instance → Target registration**
+
+### 1. Check the current ASG state
+
+First, I would check the Auto Scaling Group:
+
+```bash
+aws autoscaling describe-auto-scaling-groups \
+  --auto-scaling-group-names <asg-name>
+```
+
+I would look at:
+
+- Desired capacity
+- Current capacity
+- Minimum capacity
+- Maximum capacity
+- Instance health
+- Availability Zones
+- Launch Template/version
+
+For example, if:
+
+```text
+Desired = 4
+Current = 2
+Max = 4
+```
+
+then the ASG knows it needs two more instances.
+
+If:
+
+```text
+Desired = 2
+Current = 2
+```
+
+but I expected scaling to happen, then I would investigate the **CloudWatch alarm and scaling policy**.
+
+---
+
+### 2. Check CloudWatch metrics
+
+Next, I would verify whether the scaling metric is actually crossing the configured threshold.
+
+For example, if scaling is based on CPU:
+
+```text
+CPU > 70%
+```
+
+or for an ALB-based application:
+
+```text
+RequestCountPerTarget > threshold
+```
+
+I would check the CloudWatch metric for the exact period when the scaling should have happened.
+
+I would verify:
+
+- Metric is receiving data
+- Correct dimensions are being used
+- Threshold is correct
+- Evaluation period is correct
+- Datapoints are sufficient to trigger the alarm
+- There isn't a delay in metric publishing
+
+This is important because sometimes the application is under load, but the ASG is looking at the **wrong metric, wrong target group, or wrong dimensions**.
+
+---
+
+### 3. Check the CloudWatch alarm
+
+I would inspect the alarm:
+
+```bash
+aws cloudwatch describe-alarms \
+  --alarm-names <alarm-name>
+```
+
+I would verify whether it is:
+
+```text
+OK
+ALARM
+INSUFFICIENT_DATA
+```
+
+If it is `ALARM`, I know the metric condition is being met.
+
+If the alarm is `OK`, I would investigate the metric or threshold.
+
+If it is `INSUFFICIENT_DATA`, I would investigate why CloudWatch isn't receiving the expected metric.
+
+---
+
+### 4. Check the scaling policy
+
+Next, I would verify the scaling policy attached to the ASG:
+
+```bash
+aws autoscaling describe-policies \
+  --auto-scaling-group-name <asg-name>
+```
+
+I would check:
+
+- Policy type
+- Scaling adjustment
+- Target value if using target tracking
+- Cooldown
+- Warm-up period
+- Whether the policy is actually associated with the correct ASG
+
+For example, with target tracking:
+
+```text
+Desired CPU = 60%
+```
+
+or:
+
+```text
+RequestCountPerTarget = 100
+```
+
+I would confirm the configured target actually matches the application's expected capacity.
+
+---
+
+### 5. Check ASG Activity History
+
+This is one of the most important checks.
+
+I would run:
+
+```bash
+aws autoscaling describe-scaling-activities \
+  --auto-scaling-group-name <asg-name>
+```
+
+This tells me whether Auto Scaling actually attempted to launch instances and, if it failed, **why**.
+
+For example, I might see:
+
+```text
+Launching a new EC2 instance
+Failed: InsufficientInstanceCapacity
+```
+
+or:
+
+```text
+Failed: Invalid IAM instance profile
+```
+
+or:
+
+```text
+Failed: Launch Template version does not exist
+```
+
+or:
+
+```text
+Failed: Insufficient free IP addresses
+```
+
+This immediately narrows down the problem.
+
+---
+
+### 6. Check Launch Template
+
+If Auto Scaling is attempting to launch instances but they aren't coming up, I would check the Launch Template:
+
+```bash
+aws ec2 describe-launch-template-versions \
+  --launch-template-id <launch-template-id>
+```
+
+I would verify:
+
+- AMI ID
+- Instance type
+- Security Groups
+- IAM instance profile
+- User data
+- EBS configuration
+- Key pair if required
+- Correct Launch Template version
+
+A common real-world issue is that someone updated the Launch Template but the ASG is still using an **older version**.
+
+---
+
+### 7. Check EC2 capacity and Availability Zones
+
+If the ASG wants to launch an instance but EC2 cannot provision it, I would check for capacity problems.
+
+For example:
+
+```text
+InsufficientInstanceCapacity
+```
+
+could mean AWS doesn't currently have enough capacity for that instance type in that AZ.
+
+I would check:
+
+- Availability Zones
+- Instance type availability
+- Subnet capacity
+- EC2 service limits
+- Regional capacity
+
+If appropriate, I could configure multiple AZs or use multiple instance types through an **EC2 Auto Scaling Mixed Instances Policy**.
+
+---
+
+### 8. Check subnet IP availability
+
+This is a common issue that can be missed.
+
+I would check:
+
+```bash
+aws ec2 describe-subnets \
+  --subnet-ids <subnet-id>
+```
+
+and look at:
+
+```text
+AvailableIpAddressCount
+```
+
+If the subnet has no available private IP addresses, the ASG cannot launch additional instances even though the scaling policy is working correctly.
+
+The solution would be to expand the subnet/VPC CIDR or use additional subnets with available IP capacity.
+
+---
+
+### 9. Check IAM permissions
+
+I would verify that the ASG/EC2 configuration has the required IAM permissions.
+
+For example, if the instance profile or related configuration is incorrect, instance launch can fail.
+
+I would check:
+
+```bash
+aws iam get-instance-profile \
+  --instance-profile-name <profile-name>
+```
+
+I would also check CloudTrail if I suspect an IAM or API authorization failure.
+
+---
+
+### 10. Check whether instances are launching but immediately terminating
+
+Another important scenario is:
+
+```text
+Scaling triggered
+       ↓
+EC2 launches
+       ↓
+Health check fails
+       ↓
+ASG terminates instance
+```
+
+So I would check:
+
+```bash
+aws autoscaling describe-scaling-activities \
+  --auto-scaling-group-name <asg-name>
+```
+
+and the EC2 instance state/history.
+
+I would investigate:
+
+- EC2 status checks
+- ELB health checks
+- Application startup
+- User-data script
+- Security Groups
+- Target Group health
+- Application port
+- Health-check path
+
+For example, if the ALB health check is:
+
+```text
+HTTP : 8080 /health
+```
+
+but the application is actually listening on:
+
+```text
+HTTP : 8000
+```
+
+the instance may launch successfully but immediately become unhealthy and be replaced.
+
+---
+
+### 11. Check target group registration
+
+If instances launch but users still experience capacity problems, I would check the ALB target group:
+
+```bash
+aws elbv2 describe-target-health \
+  --target-group-arn <target-group-arn>
+```
+
+I would verify that new instances are:
+
+```text
+healthy
+```
+
+rather than:
+
+```text
+unhealthy
+```
+
+This helps distinguish between:
+
+> **"ASG isn't launching instances"**
+
+and:
+
+> **"ASG launches instances, but they aren't becoming usable."**
+
+---
+
+### 12. Check scaling timing
+
+Since the question specifically says instances aren't launching **within the required time frame**, I would also investigate scaling delays.
+
+For example:
+
+```text
+Metric crosses threshold
+        ↓
+CloudWatch evaluation
+        ↓
+Alarm changes state
+        ↓
+Scaling policy executes
+        ↓
+EC2 launch
+        ↓
+Instance boot
+        ↓
+Application startup
+        ↓
+Health check
+        ↓
+Target becomes healthy
+```
+
+There can be delays at several points.
+
+I would review:
+
+- CloudWatch evaluation periods
+- ASG instance warm-up
+- Cooldown
+- Application startup time
+- User-data execution time
+- AMI boot time
+- ALB health-check interval/threshold
+- Container startup time
+
+If the instance takes 5 minutes to become healthy, launching it after the load spike may already be too late.
+
+In that case, I might adjust the **scaling threshold, evaluation period, instance warm-up, or minimum capacity** based on the application's actual startup characteristics.
+
+---
+
+### 13. Check AWS service quotas and account limits
+
+I would also check whether we are hitting an AWS limit.
+
+For example:
+
+- EC2 instance limits
+- vCPU limits
+- EBS limits
+- Elastic IP limits
+- ASG limits
+
+If the ASG activity history shows a quota-related failure, I would request an appropriate quota increase or redesign the capacity configuration.
+
+---
+
+### 14. Resolution
+
+Once I identify the failure point, I would make the appropriate fix.
+
+For example:
+
+| Problem | Resolution |
+|---|---|
+| CloudWatch metric wrong | Correct metric/dimensions |
+| Alarm threshold incorrect | Adjust threshold/evaluation |
+| Scaling policy incorrect | Correct policy |
+| ASG max capacity reached | Increase max capacity if justified |
+| Launch Template wrong | Fix and use correct version |
+| Subnet IP exhaustion | Add/expand subnet capacity |
+| EC2 capacity issue | Use additional AZs/instance types |
+| IAM issue | Correct required permissions |
+| User-data failure | Fix bootstrap script |
+| Health check failure | Fix app/port/path/SG |
+| Slow application startup | Optimize startup/warm-up/scaling strategy |
+| AWS quota reached | Request quota increase |
+| Scaling too late | Tune thresholds and predictive/target tracking strategy |
+
+### How I would answer in the interview
+
+> "If Auto Scaling is not launching instances within the required time, I would first identify where the scaling flow is breaking. I would check the ASG's desired, current, minimum and maximum capacity using `describe-auto-scaling-groups`. Then I would verify the CloudWatch metric and alarm to make sure the scaling condition was actually triggered.
+>
+> If the alarm is in ALARM state, I would check the scaling policy and then immediately check ASG activity history using `describe-scaling-activities`, because that usually tells me whether the launch was attempted and why it failed.
+>
+> If the ASG attempted to launch an instance, I would investigate the Launch Template, AMI, IAM instance profile, subnet IP availability, Availability Zone capacity, and AWS service quotas. If the instance launches but doesn't become usable, I would check EC2 status checks, user-data, application startup and ALB target health.
+>
+> Since the requirement is specifically about launching within a certain time frame, I would also look at CloudWatch evaluation periods, instance warm-up, cooldown, application startup time and health-check configuration. After identifying the bottleneck, I would make the minimum required configuration change, test scaling under load, and verify that the new instance becomes healthy within the required SLA."
