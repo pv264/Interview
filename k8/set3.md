@@ -576,3 +576,257 @@ For example, if the EBS volume is in `us-east-1a` but the Pod is restricted to n
 > I would use commands such as `kubectl describe pod`, `kubectl describe pvc`, `kubectl get pv`, `kubectl get storageclass`, `kubectl get volumeattachment`, and CSI driver logs. If required, I would use `aws ec2 describe-volumes` to verify the actual EBS volume state.
 >
 > Once I identify the specific failure—for example, an AZ mismatch, CSI IAM issue, stuck volume attachment, or insufficient storage capacity—I would fix that underlying issue and then verify that the PVC becomes Bound, the volume attaches successfully, and the Pod reaches Running and Ready state."
+
+
+The main difference is **what question each probe is trying to answer**.
+
+### 1. Readiness Probe
+
+A **readiness probe answers:**
+
+> **"Is this Pod ready to receive traffic?"**
+
+For example, suppose my application has started, but it is still:
+
+- Loading configuration
+- Connecting to a database
+- Loading a large model
+- Warming up a cache
+
+The Pod may be running, but it is not ready to serve requests yet.
+
+If the readiness probe fails, Kubernetes marks the Pod as **NotReady**.
+
+The important point is:
+
+> **A readiness probe failure does NOT restart the container.**
+
+Instead, Kubernetes removes the Pod from the Service's endpoints, so traffic stops being sent to that Pod.
+
+For example:
+
+```text
+Service
+   |
+   +---- Pod-1  ✅ Ready → receives traffic
+   |
+   +---- Pod-2  ❌ NotReady → no traffic
+   |
+   +---- Pod-3  ✅ Ready → receives traffic
+```
+
+Pod-2 continues running and Kubernetes keeps checking the readiness probe.
+
+Once it passes again:
+
+```text
+Pod-2 → Ready
+```
+
+Kubernetes adds it back to the Service endpoints and traffic can be sent to it again.
+
+---
+
+### 2. Liveness Probe
+
+A **liveness probe answers:**
+
+> **"Is this container still functioning, or has it become stuck/unhealthy?"**
+
+For example, the application process might still exist, but it could be:
+
+- Deadlocked
+- Hung
+- Stuck
+- Not responding
+- In a state where it cannot recover by itself
+
+If the **liveness probe fails repeatedly**, Kubernetes considers the container unhealthy and **restarts the container**.
+
+For example:
+
+```text
+Container
+   ↓
+Liveness probe fails
+   ↓
+Failure threshold reached
+   ↓
+Kubernetes restarts container
+   ↓
+Container starts again
+```
+
+So:
+
+> **Liveness failure can cause a container restart.**
+
+---
+
+### 3. Does readiness restart the Pod?
+
+**No.**
+
+This is one of the most important interview points.
+
+If:
+
+```text
+Readiness probe → FAIL
+```
+
+the behavior is approximately:
+
+```text
+Pod continues running
+        ↓
+Pod marked NotReady
+        ↓
+Removed from Service endpoints
+        ↓
+No new traffic sent to it
+        ↓
+Kubernetes continues checking
+        ↓
+Probe succeeds
+        ↓
+Pod becomes Ready
+        ↓
+Traffic resumes
+```
+
+There is **no container restart just because readiness fails**.
+
+---
+
+### 4. Does liveness restart the Pod?
+
+If the liveness probe continues failing and reaches the configured failure threshold:
+
+```text
+Liveness probe → FAIL
+        ↓
+Failure threshold reached
+        ↓
+Container restarted
+```
+
+For example:
+
+```yaml
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  periodSeconds: 10
+  failureThreshold: 3
+```
+
+If the liveness check fails three consecutive times according to the configured probing behavior, Kubernetes restarts the container.
+
+---
+
+### 5. What happens to the Pod when a container restarts?
+
+This is another important distinction.
+
+Suppose:
+
+```text
+Pod: payment-api
+Container: payment-api
+```
+
+The liveness probe fails.
+
+Kubernetes generally **restarts the container inside the existing Pod**. The Pod itself isn't necessarily deleted and recreated.
+
+You might see:
+
+```bash
+kubectl get pods
+```
+
+show:
+
+```text
+NAME          READY   STATUS    RESTARTS
+payment-api   1/1     Running   3
+```
+
+The `RESTARTS` count increases.
+
+This is different from the Pod itself being replaced by a Deployment.
+
+---
+
+### 6. Startup Probe
+
+There is also a **startup probe**, which is very useful for applications that take a long time to start.
+
+For example:
+
+```text
+Container starts
+       ↓
+Startup probe
+       ↓
+Application initialization
+       ↓
+Startup succeeds
+       ↓
+Readiness + Liveness begin
+```
+
+While the startup probe is still succeeding/failing within its configured limits, Kubernetes doesn't run the liveness/readiness checks in the normal way.
+
+This prevents Kubernetes from killing a slow-starting application.
+
+For example, if an application takes 2 minutes to start and the liveness probe starts immediately, Kubernetes might incorrectly think the application is unhealthy and repeatedly restart it.
+
+---
+
+### 7. Simple comparison
+
+| Probe | Question | If it fails |
+|---|---|---|
+| **Readiness** | Can this Pod receive traffic? | Pod marked NotReady; removed from Service endpoints |
+| **Liveness** | Is this container still healthy/alive? | Container restarted after failure threshold |
+| **Startup** | Has the application finished starting? | Container restarted if startup never succeeds within configured limits |
+
+### Interview example
+
+Suppose I have 3 API Pods:
+
+```text
+              Service
+             /   |   \
+            /    |    \
+         Pod-1 Pod-2 Pod-3
+          ✅     ❌     ✅
+        Ready  NotReady Ready
+```
+
+If Pod-2's **readiness probe fails**, the Service stops sending traffic to Pod-2, but Pod-2 continues running.
+
+If Pod-2's **liveness probe fails repeatedly**, Kubernetes restarts the container.
+
+After the restart:
+
+```text
+Container starts
+      ↓
+Startup completes
+      ↓
+Readiness succeeds
+      ↓
+Pod becomes Ready
+      ↓
+Service sends traffic again
+```
+
+### How I would answer the interviewer
+
+> **"Readiness and liveness serve different purposes. Readiness determines whether a Pod is ready to receive traffic. If readiness fails, Kubernetes marks the Pod NotReady and removes it from the Service endpoints, but it does not restart the container. Liveness determines whether the container is still functioning. If the liveness probe repeatedly fails and reaches the failure threshold, Kubernetes restarts the container.**
+>
+> **For example, if my application is temporarily unable to connect to a downstream dependency, I might use readiness so that traffic is stopped without unnecessarily restarting the application. If the application becomes completely hung or deadlocked and cannot recover by itself, liveness can detect that condition and restart the container. For slow-starting applications, I would use a startup probe so that liveness doesn't restart the application while it is still initializing."**
