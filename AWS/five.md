@@ -492,3 +492,43 @@ I would also confirm with the application team that API response times have retu
 > If the bottleneck is storage, I would tune IOPS or throughput. If it's a query, I would optimize the query or indexes. If it's connection exhaustion, I would fix the connection pool rather than blindly increasing max connections. If the workload genuinely exceeds the current instance capacity, then I would scale the RDS instance.
 >
 > Finally, I would validate the fix by comparing database latency, wait events, connections and application response time against the previous baseline and continue monitoring to make sure the issue doesn't recur."
+
+
+# Transit Gateway vs VPC Peering
+
+If I need to connect two VPCs, I would generally consider **VPC Peering**. It provides a direct private network connection between the two VPCs.
+
+For example, if I have an application in one VPC and a shared service in another VPC, and they need to communicate with each other, I can create a VPC peering connection and add the appropriate routes in both VPCs.
+
+I would prefer VPC Peering when the environment is relatively small and the connectivity requirement is mainly **point-to-point**.
+
+However, VPC Peering becomes difficult to manage as the number of VPCs increases because each VPC needs individual peering connections. Also, VPC Peering is **not transitive**.
+
+For example:
+
+```text
+VPC-A → VPC-B → VPC-C
+```
+
+VPC-A cannot automatically communicate with VPC-C through VPC-B.
+
+If I have a larger AWS environment with multiple VPCs, multiple AWS accounts, or hybrid connectivity with an on-premises data center, I would use **AWS Transit Gateway**.
+
+Transit Gateway acts as a centralized networking hub:
+
+```text
+Application VPC →\
+Development VPC → **Transit Gateway** → On-Premises\
+Security VPC →
+```
+
+Instead of creating many individual peering connections, each VPC connects to the Transit Gateway and routing can be managed centrally.
+
+For example, if an organization has 20 or 30 VPCs across multiple AWS accounts, I would prefer Transit Gateway because it simplifies routing and network management. It can also integrate with **Site-to-Site VPN and Direct Connect** for hybrid connectivity.
+
+So my decision would be:
+
+- **Two or a few VPCs with simple point-to-point connectivity → VPC Peering**
+- **Many VPCs/accounts or centralized/hybrid networking → Transit Gateway**
+
+I wouldn't say Transit Gateway is always better. I would choose based on the **number of VPCs, connectivity pattern, scalability, and network management requirements**.
