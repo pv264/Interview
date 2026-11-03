@@ -81,7 +81,6 @@ When designing a secure and scalable cloud architecture, I usually start with a 
 - The application layer runs on auto-scaling compute such as **EC2 instances** or **Kubernetes pods** in private subnets.
   - On EC2, **Auto Scaling Groups** handle scaling.
   - On Kubernetes, the **Horizontal Pod Autoscaler** scales pods and **Karpenter** or the **Cluster Autoscaler** adds nodes when needed.
-- I keep the application **stateless** by storing sessions in a shared cache, so any instance can serve any request and the system scales horizontally.
 - For outbound internet access from private subnets I use **NAT Gateways**. For AWS services like S3 and Secrets Manager I use **VPC endpoints** so that traffic never leaves the AWS network.
 - For heavy or asynchronous workloads, I use **SQS** or **SNS** to decouple services, so traffic spikes don't overwhelm downstream components.
 
