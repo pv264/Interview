@@ -159,3 +159,117 @@ I also check whether the Jenkins user can execute the required commands and acce
 
 **Finally, I make sure every deployment is traceable to a Git commit and immutable image version, so we know exactly what version is running in each environment.**
 
+
+## 6
+
+# Securely Connecting Jenkins on EC2 to EKS Using IAM Role-Based Authentication
+
+I use IAM role-based authentication instead of storing AWS access keys in Jenkins.
+
+First, I create an IAM role and attach it to the Jenkins EC2 instance through an instance profile. This allows Jenkins to get temporary AWS credentials automatically through the EC2 metadata service. I also enforce IMDSv2 for additional security.
+
+Next, I create an EKS access entry for that IAM role and grant only the required Kubernetes permissions, preferably limited to the namespace where Jenkins deploys applications.
+
+In my Jenkins pipeline, I execute `aws eks update-kubeconfig`. This configures kubectl to communicate with EKS. When kubectl runs, it invokes `aws eks get-token`, which generates a temporary authentication token using the EC2 IAM role credentials.
+
+
+
+# Securely Connecting Jenkins on EC2 to EKS Using IAM Role-Based Authentication
+
+I use IAM role-based authentication instead of storing AWS access keys in Jenkins.
+
+First, I create an IAM role and attach it to the Jenkins EC2 instance through an instance profile. This allows Jenkins to get temporary AWS credentials automatically through the EC2 metadata service. I also enforce IMDSv2 for additional security.
+
+Next, I create an EKS access entry for that IAM role and grant only the required Kubernetes permissions, preferably limited to the namespace where Jenkins deploys applications.
+
+In my Jenkins pipeline, I execute `aws eks update-kubeconfig`. This configures kubectl to communicate with EKS. When kubectl runs, it invokes `aws eks get-token`, which generates a temporary authentication token using the EC2 IAM role credentials.
+
+EKS validates the IAM identity and checks its authorization permissions before allowing the deployment.
+
+Finally, I use separate IAM roles for different environments and maintain audit logs through CloudTrail and EKS audit logging.
+
+This approach avoids static credentials, reduces credential management overhead, and follows the principle of least privilege.
+
+---
+
+## Sample Jenkins Pipeline
+
+The following is a sample declarative Jenkins pipeline that deploys an application to EKS using the EC2 instance's IAM role.
+
+```groovy
+pipeline {
+    agent any
+
+    environment {
+        AWS_REGION  = 'ap-south-1'
+        EKS_CLUSTER = 'production-eks'
+        NAMESPACE   = 'prod'
+        APP_NAME    = 'my-app'
+    }
+
+    stages {
+
+        stage('Check AWS Identity') {
+            steps {
+                sh '''
+                    aws sts get-caller-identity
+                '''
+            }
+        }
+
+        stage('Configure EKS Access') {
+            steps {
+                sh '''
+                    aws eks update-kubeconfig \
+                      --region $AWS_REGION \
+                      --name $EKS_CLUSTER
+                '''
+            }
+        }
+
+        stage('Deploy Application') {
+            steps {
+                sh '''
+                    kubectl apply -f deployment.yaml \
+                      -n $NAMESPACE
+
+                    kubectl rollout status \
+                      deployment/$APP_NAME \
+                      -n $NAMESPACE
+                '''
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                sh '''
+                    kubectl get pods -n $NAMESPACE
+                    kubectl get deployments -n $NAMESPACE
+                '''
+            }
+        }
+    }
+
+    post {
+        always {
+            sh 'rm -f ~/.kube/config'
+        }
+    }
+}
+```
+
+### Pipeline execution flow
+
+1. **Check AWS Identity:** Verifies that Jenkins is using the expected EC2 IAM role.
+2. **Configure EKS Access:** Generates the kubeconfig using `aws eks update-kubeconfig`.
+3. **Deploy Application:** Uses kubectl to deploy the application into the specified namespace.
+4. **Verify Deployment:** Checks whether the deployment and pods are running.
+5. **Cleanup:** Removes the temporary kubeconfig after the pipeline finishes.
+
+**Note:** For shared Jenkins environments, use a build-specific kubeconfig file rather than deleting the shared `~/.kube/config`. Also ensure the Jenkins EC2 instance has network connectivity to the EKS API endpoint.
+
+EKS validates the IAM identity and checks its authorization permissions before allowing the deployment.
+
+Finally, I use separate IAM roles for different environments and maintain audit logs through CloudTrail and EKS audit logging.
+
+This approach avoids static credentials, reduces credential management overhead, and follows the principle of least privilege.
