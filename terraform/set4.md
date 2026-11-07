@@ -1,26 +1,43 @@
-I follow a modular approach in Terraform. For example, I maintain separate reusable modules for VPC and EC2.
+# Terraform Interview Questions and Answers
 
-The VPC module handles VPC creation, public and private subnets, Internet Gateway, NAT Gateway and route tables. The EC2 module handles EC2 instances, Security Groups and IAM instance profiles.
+## Q1. How do you design and manage infrastructure using Terraform modules across multiple environments?
 
-I maintain these modules in a centralized modules directory and have separate environment directories for Dev, QA and Production.
+**Answer:**
 
-Each environment calls the same VPC and EC2 modules but passes different input values through variables and terraform.tfvars files. For example, Dev might use a t3.micro instance, QA a t3.small and Production a t3.medium.
+I follow a modular approach in Terraform. I maintain separate reusable modules for VPC and EC2.
 
-For module communication, I use Terraform outputs and input variables. For example, the VPC module exports the VPC ID and private subnet IDs, which are passed to the EC2 module so that instances are launched in the correct subnets.
+- **VPC module:** Handles VPC creation, public and private subnets, Internet Gateway, NAT Gateway and route tables.
+- **EC2 module:** Handles EC2 instances, Security Groups and IAM instance profiles.
 
-For state management, I use separate S3 remote state files for each environment with state locking enabled. This ensures environment isolation and prevents concurrent state modifications.
+I maintain these reusable modules in a centralized `modules` directory and have separate environment directories for Dev, QA and Production.
 
-This approach avoids code duplication, improves reusability and makes infrastructure easier to maintain across environments.
+Each environment calls the same VPC and EC2 modules but passes different input values through variables and `terraform.tfvars` files.
 
+For example:
+- Dev uses a `t3.micro` instance.
+- QA uses a `t3.small` instance.
+- Production uses a `t3.medium` instance.
 
-If we don't have a CI/CD pipeline, we can execute Terraform directly from our local machines.
+For communication between modules, I use Terraform input variables and outputs. For example, the VPC module exports the VPC ID and private subnet IDs, which are passed to the EC2 module so that instances are launched in the appropriate subnets.
 
-First, we authenticate with AWS using our company's approved login method.
+For state management, I use separate S3 remote state files for each environment, with state locking enabled. This ensures environment isolation and prevents concurrent state modifications.
 
-After authentication, we use AWS IAM roles to access the required AWS accounts. For example, if we want to deploy infrastructure in the Dev account, we assume the Dev Terraform role.
+This modular approach reduces code duplication, improves reusability and makes infrastructure easier to maintain across multiple environments.
 
-AWS STS then provides temporary credentials for that role. Terraform automatically uses these credentials to connect to AWS and perform infrastructure operations.
+---
 
-Similarly, if we have separate Dev, QA and Production accounts, we maintain separate IAM roles for each environment and assume the appropriate role whenever we need to work in that account.
+## Q2. How do you authenticate Terraform with AWS when there is no CI/CD pipeline?
 
-For security, we follow least-privilege access, restrict Production access and avoid using permanent AWS access keys.
+**Answer:**
+
+If we don't have a CI/CD pipeline for infrastructure automation, developers can execute Terraform directly from their local machines.
+
+First, we authenticate with AWS using our company's approved login mechanism.
+
+After authentication, we use AWS IAM roles to access the required AWS accounts. For example, if we want to deploy infrastructure in the Dev account, we assume the Dev Terraform IAM role.
+
+AWS STS (Security Token Service) then provides temporary credentials for that role. Terraform automatically uses these credentials through the AWS credential provider chain to communicate with AWS and perform infrastructure operations.
+
+Similarly, if we have separate Dev, QA and Production AWS accounts, we maintain dedicated IAM roles for each environment and assume the appropriate role whenever we need to work in that account.
+
+From a security perspective, we follow the principle of least privilege, restrict Production access and avoid storing permanent AWS access keys in Terraform configuration files.
