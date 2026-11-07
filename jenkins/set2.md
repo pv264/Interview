@@ -273,3 +273,30 @@ EKS validates the IAM identity and checks its authorization permissions before a
 Finally, I use separate IAM roles for different environments and maintain audit logs through CloudTrail and EKS audit logging.
 
 This approach avoids static credentials, reduces credential management overhead, and follows the principle of least privilege.
+
+
+
+# Question: How do you manage Jenkins agents in an enterprise environment, and how do you scale them dynamically?
+
+**Answer:**
+
+We use the **Jenkins EC2 Fleet plugin** for dynamic agent management.
+
+We maintain a small baseline of EC2 agents to handle routine pipeline executions. This ensures that builds get faster feedback without waiting for new EC2 instances to launch and become available, which can typically take a couple of minutes.
+
+For agent provisioning, we use an **EC2 Launch Template instead of the older Launch Configuration**, as EC2 Fleet uses Launch Templates. The Launch Template references a custom AMI that comes pre-installed with all the tools required by our pipelines, such as Java, Git, Docker and Trivy.
+
+Next, we create an **EC2 Fleet in AWS** and integrate it with Jenkins using the Jenkins EC2 Fleet plugin.
+
+For permissions, we configure separate IAM roles for the Jenkins controller and the agent instances:
+
+- **Jenkins Controller IAM Role:** The controller has permissions to manage EC2 Fleet, including actions such as `ec2:CreateFleet`, `ec2:RunInstances`, `ec2:TerminateInstances` and `iam:PassRole`. The `iam:PassRole` permission allows the controller to pass the agent IAM role to newly launched EC2 instances.
+- **Jenkins Agent IAM Role:** Each agent instance has its own IAM role with permissions restricted to the requirements of the build. For example, it may have permission to push Docker images to Amazon ECR.
+
+When multiple developers trigger pipelines and the existing agents run out of available executors, Jenkins requests additional EC2 instances through the EC2 Fleet plugin.
+
+Once a new EC2 instance is launched and becomes available, the Jenkins controller connects to it over SSH and remotely starts the Jenkins agent process. For this connectivity, the controller's security group must allow outbound SSH traffic, while the agent's security group must allow inbound SSH traffic from the controller.
+
+When the workload decreases, idle agents are automatically terminated based on the configured idle-timeout policy.
+
+**Overall, this approach provides dynamic build capacity without keeping unnecessary EC2 instances running continuously. At the same time, maintaining a small baseline of ready agents ensures faster execution of routine pipelines and helps optimize infrastructure costs.**
