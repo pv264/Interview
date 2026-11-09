@@ -1,3 +1,24 @@
+## Your application and database are deployed in two different private subnets. How do they communicate with each other?
+
+### Interview-ready answer
+
+"In our AWS architecture, we deploy application EC2 instances in one private subnet and database instances in a separate dedicated private subnet, both within the same VPC.
+
+The application runs inside Docker containers, and we configure the database connection details through environment variables, such as the database private IP or DNS name, port, username and password.
+
+When the application needs to communicate with the database, it establishes a TCP connection to the database's private IP on the database port, for example, PostgreSQL on port 5432.
+
+Since both subnets belong to the same VPC, AWS provides a local route in the route table, which allows communication between the subnets without requiring an Internet Gateway or NAT Gateway.
+
+From a security perspective, we attach separate security groups to the application and database instances. On the database security group, we allow inbound traffic on port 5432 only from the application security group.
+
+Docker handles the container's outbound networking through its bridge network and the EC2 host network.
+
+Finally, PostgreSQL accepts the connection based on its listening configuration and authentication rules, processes the query and returns the response to the application.
+
+This way, the application and database communicate privately within the VPC without exposing the database to the internet."
+
+
 # RDS Performance Troubleshooting After AWS Migration
 
 ## Question
