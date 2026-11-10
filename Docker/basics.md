@@ -1,5 +1,42 @@
 ## 1 What is the difference between a Container and a Virtual Machine?
 
+# Physiacal server
+┌─────────────────────────────────────────┐
+│              Application                 │
+├─────────────────────────────────────────┤
+│         Operating System (OS)            │
+├─────────────────────────────────────────┤
+│   Physical Hardware (CPU, RAM, Disk)     │
+└─────────────────────────────────────────┘
+
+---------------------------------------------------------------------------------------------------
+
+# virtual machine
+┌───────────┐  ┌───────────┐  ┌───────────┐
+│    App A   │  │    App B   │  │    App C   │
+├───────────┤  ├───────────┤  ├───────────┤
+│  Guest OS  │  │  Guest OS  │  │  Guest OS  │   ← each VM has its own
+│  (Ubuntu)  │  │  (CentOS)  │  │ (Windows)  │     full OS kernel
+├───────────┴──┴───────────┴──┴───────────┤
+│          Hypervisor (VMware/KVM)          │
+├───────────────────────────────────────────┤
+│   Physical Hardware (CPU, RAM, Disk)       │
+└───────────────────────────────────────────┘
+----------------------------------------------------------------------------------
+# Docker Container
+
+┌───────────┐  ┌───────────┐  ┌───────────┐
+│    App A   │  │    App B   │  │    App C   │
+├───────────┤  ├───────────┤  ├───────────┤
+│ Bins/Libs  │  │ Bins/Libs  │  │ Bins/Libs  │   ← only app-level
+│  (no OS!)  │  │  (no OS!)  │  │  (no OS!)  │     dependencies
+├───────────┴──┴───────────┴──┴───────────┤
+│         Docker Engine (container runtime)  │
+├───────────────────────────────────────────┤
+│      Host Operating System (one kernel)    │
+├───────────────────────────────────────────┤
+│   Physical Hardware (CPU, RAM, Disk)       │
+└───────────────────────────────────────────┘
 ### The Architectural Difference: Shared Kernel vs. Guest OS (Hypervisor)
 
 *   **Virtual Machines (VMs):** A virtual machine runs on top of a hypervisor and includes a **complete guest operating system**, which independently consumes CPU, memory, and storage. 
