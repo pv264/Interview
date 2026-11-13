@@ -144,4 +144,164 @@ Cost optimization is a crucial part of DevOps to ensure efficient resource utili
 - 🔹 Optimize Kubernetes cluster usage with Karpenter (AWS), Cluster Autoscaler, or KEDA.
 
 
+# Interview Question: Explain the Request Flow from Client to Application Pods in AWS EKS Using API Gateway and an Internet-Facing ALB
+
+## Architecture Overview
+
+In our AWS EKS architecture, we use Route 53, API Gateway, an internet-facing Application Load Balancer (ALB), and Kubernetes Ingress to route incoming client requests to application Pods.
+
+## Request Flow – Step by Step
+
+### 1. Route 53 – DNS Resolution
+
+When a user accesses our application using a domain name, such as `api.example.com`, Route 53 resolves the domain to the API Gateway custom domain endpoint.
+
+### 2. API Gateway – API Management
+
+The request reaches API Gateway, where we handle:
+
+- Authentication and authorization.
+- Request validation.
+- Throttling and rate limiting.
+- API management.
+
+Once the request passes these checks, API Gateway forwards it to the backend ALB using its publicly accessible endpoint.
+
+### 3. Internet-Facing Application Load Balancer
+
+The ALB is deployed in public subnets across multiple Availability Zones.
+
+It receives incoming HTTP/HTTPS requests and distributes traffic to the appropriate backend targets based on the routing configuration.
+
+We configure HTTPS using an SSL/TLS certificate from AWS Certificate Manager (ACM), where applicable.
+
+### 4. AWS Load Balancer Controller
+
+In EKS, we install the AWS Load Balancer Controller.
+
+It watches Kubernetes Ingress resources and automatically creates and manages the corresponding AWS ALB, including:
+
+- Listeners.
+- Listener rules.
+- Target groups.
+- Load balancer configuration.
+
+**Important:** The AWS Load Balancer Controller manages the ALB configuration. It does not sit in the actual application request path.
+
+### 5. Kubernetes Ingress
+
+Ingress defines the routing rules based on hostnames and URL paths.
+
+For example:
+
+- `/users` routes to the user service.
+- `/payments` routes to the payment service.
+- `/orders` routes to the order service.
+
+### 6. Kubernetes Service and Application Pods
+
+The ALB forwards traffic to the appropriate application Pods.
+
+When using the ALB **IP target type**, the ALB routes directly to Pod IP addresses.
+
+Kubernetes Services and EndpointSlices help the AWS Load Balancer Controller discover the backend Pods.
+
+The application container inside the Pod processes the request and sends the response back through the same network path.
+
+---
+
+## Complete Architecture Flow
+
+```text
+Client / Browser
+       |
+       v
+    Route 53
+   (DNS Resolution)
+       |
+       v
+  API Gateway
+(Authentication, Authorization,
+ Throttling, Request Validation)
+       |
+       v
+Internet-Facing ALB
+       |
+       v
+  Ingress Rules
+(Host-based / Path-based Routing)
+       |
+       v
+Kubernetes Service / EndpointSlice
+       |
+       v
+  Application Pod
+       |
+       v
+ Application Container
+```
+
+**Note:** The AWS Load Balancer Controller manages the ALB and its routing configuration. It is not a network hop in the request flow.
+
+---
+
+## Common Interview Follow-up Questions
+
+### 1. Why are you using API Gateway when you already have an ALB?
+
+API Gateway provides API-level capabilities such as authentication, authorization, throttling, request validation and API lifecycle management.
+
+ALB primarily handles load balancing and Layer 7 routing.
+
+### 2. Why are you using an internet-facing ALB?
+
+Because API Gateway is forwarding requests to the ALB's publicly reachable endpoint without using VPC Link.
+
+We need to secure the ALB so that clients cannot bypass API Gateway and directly access the application.
+
+### 3. Does the AWS Load Balancer Controller receive incoming requests?
+
+No. It is a control-plane component.
+
+It watches Kubernetes resources and configures AWS load-balancing resources. The ALB handles actual application traffic.
+
+### 4. Does traffic go through the Kubernetes Service when using ALB IP target mode?
+
+Not as a network hop.
+
+The ALB sends traffic directly to the Pod IP. The Service and EndpointSlice provide backend discovery information to the AWS Load Balancer Controller.
+
+### 5. Can we use an internal ALB instead?
+
+Yes. We can use an internal ALB with API Gateway through VPC Link.
+
+This is generally preferable when API Gateway should be the only public entry point because the ALB remains private and is not directly accessible from the internet.
+
+---
+
+## Important Production Consideration
+
+If API Gateway is supposed to be the only public entry point, an internal ALB with VPC Link is generally preferable to a publicly exposed ALB.
+
+If we use an internet-facing ALB, we should implement appropriate security controls to prevent unauthorized direct access and bypassing API Gateway.
+
+The exact API Gateway integration configuration also depends on whether we use a REST API or HTTP API.
+
+## Final Architecture to Remember
+
+**Without VPC Link:**
+
+```text
+Client → Route 53 → API Gateway → Internet-facing ALB
+       → Ingress Rules → Service / EndpointSlice → Pod
+```
+
+**With VPC Link (private architecture):**
+
+```text
+Client → Route 53 → API Gateway → VPC Link → Internal ALB
+       → Ingress Rules → Service / EndpointSlice → Pod
+```
+
+
 
