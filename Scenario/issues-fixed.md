@@ -35,7 +35,9 @@ Since **worker nodes** need outbound internet access to pull images from **ECR**
 * I updated the **private route tables** to route internet traffic through the **NAT Gateway**.
 * After recreating the **node group**, the nodes successfully joined the cluster and were in **Ready state**.
 
-> **Senior Signal:** When nodes fail to join an **EKS cluster**, the "Big Three" to check are **IAM Roles (AmazonEKSWorkerNodePolicy)**, **Security Group** (allowing Port 10250 and 443), and **Outbound Connectivity** (NAT Gateway or VPC Endpoints). This incident highlights why **VPC Routing** is as critical as the compute resources themselves in **EKS** setups.
+> **Senior Signal:** When nodes fail to join an **EKS cluster**, the "Big Three" to check are **IAM Roles (AmazonEKSWorkerNodePolicy,
+AmazonEKS_CNI_Policy
+AmazonEC2ContainerRegistryReadOnly)**, **Security Group** (allowing Port 10250 and 443), and **Outbound Connectivity** (NAT Gateway or VPC Endpoints). This incident highlights why **VPC Routing** is as critical as the compute resources themselves in **EKS** setups.
 
 ---
 
