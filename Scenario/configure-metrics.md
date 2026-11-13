@@ -1031,3 +1031,125 @@ Dashboards           Slack / Email
 - `alertmanager.yml` – Where should triggered alerts be sent?
 
 **Final interview takeaway:** Understand the complete flow of application instrumentation → Prometheus scraping → Grafana dashboards → Prometheus alert rules → Alertmanager notifications. This is the foundation of application and infrastructure monitoring in a DevOps/SRE environment.
+
+
+
+
+**How do you configure application and infrastructure monitoring using AWS CloudWatch and SQS?**
+
+## Interview-Ready Answer
+
+In our AWS environment, we use Amazon CloudWatch for centralized monitoring of applications and infrastructure. We use CloudWatch Alarms and Amazon SNS for alert notifications.
+
+We divide monitoring into three areas.
+
+### 1. Application-Level Monitoring
+
+At the application level, we monitor request count, response time, application errors, payment success and failure counts, and application logs.
+
+Our application logs are collected using the CloudWatch Agent installed on EC2 instances. We configure the agent using a JSON configuration file, where we specify the application log file paths and CloudWatch Log Group names.
+
+For application-specific metrics, developers can use the AWS SDK or Embedded Metric Format (EMF) to publish custom metrics to CloudWatch.
+
+For example, we can track successful and failed payment transactions and configure alarms whenever application errors exceed a predefined threshold.
+
+### 2. Infrastructure-Level Monitoring
+
+At the infrastructure level, we monitor EC2 CPU utilization, memory utilization, disk usage, network traffic and instance health.
+
+AWS automatically publishes standard EC2 metrics, such as CPU utilization and network traffic, to CloudWatch.
+
+However, memory and disk utilization are not available as standard EC2 metrics. For those, we install and configure the CloudWatch Agent on EC2 instances and enable the required metrics in its JSON configuration file.
+
+We then create CloudWatch Alarms. For example, if CPU utilization exceeds 85% or memory utilization exceeds 90% for a specified duration, CloudWatch triggers an alarm.
+
+### 3. SQS Monitoring
+
+If our application uses Amazon SQS for asynchronous processing, we monitor queue metrics through CloudWatch.
+
+AWS automatically publishes SQS metrics to CloudWatch, so we don't need to install any additional monitoring agent.
+
+Some important metrics we monitor are:
+
+- `ApproximateNumberOfMessagesVisible` – Number of messages waiting to be processed.
+- `ApproximateNumberOfMessagesNotVisible` – Number of messages currently being processed or in flight.
+- `ApproximateAgeOfOldestMessage` – How long the oldest message has been waiting.
+- `NumberOfMessagesSent` and `NumberOfMessagesDeleted` – Number of messages sent and deleted.
+
+We configure CloudWatch Alarms when the queue backlog increases beyond a threshold, when messages wait too long, or when messages accumulate in the Dead Letter Queue (DLQ).
+
+### 4. Alert Notifications
+
+We integrate CloudWatch Alarms with Amazon SNS.
+
+Whenever an alarm enters the ALARM state, SNS sends notifications to the SRE team through email or integrations such as Slack.
+
+### 5. Real-Time Production Example
+
+Suppose our payment application sends messages to an SQS queue, and background workers process those messages.
+
+If incoming messages increase but workers cannot process them at the same rate, the SQS backlog starts increasing.
+
+CloudWatch detects the increasing queue depth and triggers an alarm.
+
+We investigate worker application logs, EC2 CPU and memory utilization, database connections and SQS message age to identify the root cause.
+
+If additional processing capacity is required, we can configure EC2 Auto Scaling based on SQS backlog metrics to launch additional worker instances.
+
+After resolving the issue, we verify that the queue backlog decreases and message processing returns to normal.
+
+**Overall, CloudWatch helps us monitor application performance, infrastructure health and SQS processing, while SNS provides notifications so that the SRE team can respond to production issues proactively.**
+
+---
+
+## Quick Revision: AWS Services and Responsibilities
+
+| AWS Service | Responsibility |
+|---|---|
+| CloudWatch | Metrics collection and monitoring |
+| CloudWatch Agent | EC2 memory, disk and application logs |
+| CloudWatch Logs | Application log aggregation |
+| CloudWatch Alarms | Detect abnormal conditions |
+| SQS | Asynchronous message processing |
+| SNS | Alert notifications |
+| EC2 Auto Scaling | Automatically scale worker instances |
+
+## Important Monitoring Flows
+
+**Monitoring and alerting:**
+
+```text
+Application / EC2 / SQS
+          |
+          v
+      CloudWatch
+          |
+          v
+   CloudWatch Alarms
+          |
+          v
+         SNS
+          |
+          v
+       SRE Team
+```
+
+**Automatic worker scaling:**
+
+```text
+SQS Queue Backlog
+        |
+        v
+CloudWatch Metrics
+        |
+        v
+Auto Scaling Policy
+        |
+        v
+Additional EC2 Workers
+        |
+        v
+More Messages Processed
+```
+
+**Interview tip:** Remember the difference between CloudWatch Metrics, CloudWatch Logs, CloudWatch Alarms and SNS. They have different responsibilities, and interviewers often ask how they work together in a production environment.
