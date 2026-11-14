@@ -10,9 +10,7 @@ Currently, I am working with TechnoIdentity as an AWS DevOps Engineer, where my 
 
 I use Terraform to automate end-to-end infrastructure provisioning on AWS. Apart from infrastructure provisioning, I also take care of application deployment, CI/CD automation, monitoring, and troubleshooting to ensure the reliability and availability of the workloads.
 
-From an SRE perspective, my experience mainly revolves around infrastructure automation, production incident management, deployment reliability, monitoring, troubleshooting, and improving the scalability and availability of applications.
 
-That's a brief overview of my professional experience.
 
 
 
