@@ -29,6 +29,25 @@ Another important part of my responsibility is production troubleshooting. Whene
 
 Currently, I am also working on infrastructure and deployment activities for LLM workloads, where I focus on scalability, resource utilization, and handling incoming application traffic efficiently.
 
+
+## What is the primary difference between DevOps and SRE in your point of view?
+
+### Interview-ready answer
+
+"In my point of view, DevOps and SRE are closely related, but their primary focus is slightly different.
+
+DevOps mainly focuses on automating the software delivery lifecycle, bridging the gap between development and operations, and enabling faster and more reliable deployments.
+
+SRE applies software engineering principles to operations, with a stronger focus on maintaining application reliability, availability, scalability, and performance in production.
+
+For example, a DevOps engineer might focus on building Jenkins pipelines, automating infrastructure using Terraform, and deploying applications on Kubernetes.
+
+An SRE engineer focuses on ensuring that the deployed applications are reliable and available. This includes monitoring application health, defining SLIs and SLOs, handling production incidents, performing root cause analysis, and implementing automation to prevent recurring issues.
+
+However, in real-world environments, these responsibilities often overlap, and a single engineer may handle both DevOps and SRE activities.
+
+Ultimately, I believe DevOps helps us deliver applications efficiently, whereas SRE helps us operate those applications reliably."
+
 Apart from these activities, I participate in team discussions, deployment planning, incident reviews, and RCA discussions to identify improvements and prevent recurring issues.
 
 Overall, my day revolves around maintaining infrastructure reliability, automating operational activities, resolving production issues, and continuously improving application availability and performance.
