@@ -1,13 +1,36 @@
-Hi, my name is Pavan Venkat. I'm a Cloud and DevOps Engineer with around four years of experience in IT .
+Good morning, and thank you for giving me this opportunity to introduce myself.
 
-In my current role as a Cloud Engineer at TechnoIdentity, I'm responsible for creating and managing scalable Infrastructure for LLM deployments. I have automated this entire environment using Terraform, which successfully reduced our manual deployment time from days down to just a few hours.
+My name is Pavan, and I have close to 5 years of experience in the IT industry, primarily working in DevOps and Site Reliability Engineering.
 
-Before this, I spent over three years at TCS, where I built my foundational DevOps skills. While , my role was focused on designing and maintaining CI/CD pipelines using Jenkins, and managing applications with Docker and Kubernetes.
+I started my career with TCS, where I initially worked in L1 support, handling deployment-related issues and providing operational support.
 
-I'm excited to bring my experience in automating complex cloud systems to a new challenge.
+As I gained experience, I moved to the Platform Engineering team, where I got the opportunity to work on designing and implementing CI/CD pipelines, provisioning cloud infrastructure, and automating deployment processes. I was also involved in resolving production-related issues by collaborating closely with development and product teams, performing troubleshooting, and ensuring application availability.
 
-I’m currently handling standard Cloud Infrastructure tasks, but I’m eager to utilize my automation skills more effectively. I’m looking for a dual-function role where I can combine Cloud Engineering with DevOps practices—specifically using Infrastructure as Code (IaC) and CI/CD tools to build scalable, automated systems."
+Currently, I am working with TechnoIdentity as an AWS DevOps Engineer, where my primary responsibility is to design and implement secure, scalable, and reliable cloud infrastructure for deploying LLM workloads.
+
+I use Terraform to automate end-to-end infrastructure provisioning on AWS. Apart from infrastructure provisioning, I also take care of application deployment, CI/CD automation, monitoring, and troubleshooting to ensure the reliability and availability of the workloads.
+
+From an SRE perspective, my experience mainly revolves around infrastructure automation, production incident management, deployment reliability, monitoring, troubleshooting, and improving the scalability and availability of applications.
+
+That's a brief overview of my professional experience.
 
 
-In my current role, I’ve built a solid foundation in cloud fundamentals. Now, I’m looking to apply those skills to more complex architectures where I can focus on large-scale deployments and multi-layered security. I’m specifically looking for the challenge of managing these systems for multiple customers, as it requires a much higher level of technical depth than my current environmen
 
+
+My day-to-day responsibilities are mainly focused on infrastructure management, CI/CD automation, monitoring, production support, and improving application reliability.
+
+Usually, I start my day by checking the health of our infrastructure and deployed applications. I review monitoring dashboards and alerts to identify any issues related to CPU, memory, disk utilization, application availability, or performance.
+
+I also check whether there were any production incidents or deployment failures during off-hours and follow up on any pending issues.
+
+Apart from monitoring, I work on infrastructure provisioning and automation using Terraform. This includes managing AWS resources, maintaining secure infrastructure configurations, and ensuring that the infrastructure is scalable and reliable.
+
+I am also involved in maintaining and improving CI/CD pipelines using Jenkins. This includes troubleshooting pipeline failures, automating build and deployment processes, and ensuring smooth application releases.
+
+Another important part of my responsibility is production troubleshooting. Whenever an issue occurs, I investigate application logs, infrastructure metrics, Kubernetes resources, and networking components to identify the root cause. Depending on the issue, I coordinate with development and product teams to restore the service and implement corrective actions.
+
+Currently, I am also working on infrastructure and deployment activities for LLM workloads, where I focus on scalability, resource utilization, and handling incoming application traffic efficiently.
+
+Apart from these activities, I participate in team discussions, deployment planning, incident reviews, and RCA discussions to identify improvements and prevent recurring issues.
+
+Overall, my day revolves around maintaining infrastructure reliability, automating operational activities, resolving production issues, and continuously improving application availability and performance.
